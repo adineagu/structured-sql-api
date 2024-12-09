@@ -1,0 +1,19 @@
+#set($xtDatastoreName="XT_" + $datastore.Name + "_V")
+
+#set($stageDatastoreName="ST_" + $datastore.Name)
+-- create stage archive datastore
+
+CREATE OR REPLACE DATASTORE DWH_STAGE_ARCHIVE.$stageDatastoreName
+ALIAS $stageDatastoreName
+RESOURCE '$stageDatastoreName'
+(
+     LOAD_ID	NUMBER(22,0) NOT NULL
+    ,EFFECTIVE_DATE	DATE NOT NULL  
+#foreach($col in $datastore.Attributes)
+    ,$col.Name.toLowerCase() #getDataType($col) #if($col.IsMandatory)NOT NULL#end
+#end   
+);
+
+#macro (getDataType $col)
+#if($col.isAnnotatedWith("PROPERTIES") && $col.getAnnotation("PROPERTIES").getParameters().get("CHAR_LENGTH_SEMANTIC") == "CHAR")VARCHAR2_CHAR($col.Length)#else$!col.DDLDataType#end
+#end
