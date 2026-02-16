@@ -17,15 +17,27 @@
  */
 package org.pecheasoft.odigen.sql.util;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.collect.*;
-
 import java.lang.reflect.Array;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.prefs.Preferences;
-import org.apache.commons.lang.StringUtils;
+
+import org.apache.commons.lang3.StringUtils;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.Sets;
 
 /**
  * It provides miscellaneous and useful util methods.
@@ -809,7 +821,7 @@ public class TUtil {
     
     public static String getBasename(String name) {
         if (name.contains(CatalogConstants.IDENTIFIER_DELIMITER)) {
-            return org.apache.commons.lang.StringUtils.substringAfterLast(name, CatalogConstants.IDENTIFIER_DELIMITER);
+            return org.apache.commons.lang3.StringUtils.substringAfterLast(name, CatalogConstants.IDENTIFIER_DELIMITER);
         } else {
             return name;
         }
@@ -847,5 +859,27 @@ public class TUtil {
         
         return hasOdiStartTag && hasOdiEndTag;
         
+    }
+
+    public static String stripQuote(String str) {
+        return str.substring(1, str.length() - 1);
+    }
+
+    public static boolean checkIfExist(Object obj) {
+        return obj != null;
+    }
+
+    public static Map<String, String> escapeTableMeta(Map<String, String> map) {
+        Map<String, String> params = new HashMap<>();
+        map.forEach((key, value) -> {
+            switch (key) {
+                case CatalogConstants.CSVFILE_DELIMITER, CatalogConstants.TEXT_DELIMITER -> //backward compatibility
+                    params.put(CatalogConstants.TEXT_DELIMITER, StringUtil.unicodeEscapedDelimiter(value));
+                case CatalogConstants.CSVFILE_NULL, CatalogConstants.TEXT_NULL -> //backward compatibility
+                    params.put(CatalogConstants.TEXT_NULL, value);
+                default -> params.put(key, value);
+            }
+        });
+        return params;
     }
 }

@@ -24,48 +24,17 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include;
 @JsonInclude(Include.NON_NULL)
 public class BetweenPredicate extends Expr {
 
-  private boolean not;
-  private boolean symmetric = false;
-  private Expr predicand;
-  private Expr begin;
-  private Expr end;
+  private final Model model;
 
-  public BetweenPredicate(boolean not, boolean symmetric, Expr predicand, Expr begin, Expr end) {
-    this.not = not;
-    this.symmetric = symmetric;
-    this.predicand = predicand;
-    this.begin = begin;
-    this.end = end;
+  public record Model(boolean not, boolean symmetric, Expr predicand, Expr begin, Expr end) {
   }
 
-  public boolean isNot() {
-    return not;
+  public BetweenPredicate(Model model) {
+    this.model = model;
   }
 
-  public boolean isSymmetric() {
-    return symmetric;
+  public Model model() {
+    return model;
   }
 
-  public Expr predicand() {
-    return predicand;
-  }
-
-  public Expr begin() {
-    return begin;
-  }
-
-  public Expr end() {
-    return end;
-  }
-
-  @Override
-  public Object clone() throws CloneNotSupportedException {
-    BetweenPredicate between = (BetweenPredicate) super.clone();
-    between.not = not;
-    between.symmetric = symmetric;
-    between.predicand = (Expr) predicand.clone();
-    between.begin = (Expr) begin.clone();
-    between.end = (Expr) end.clone();
-    return between;
-  }
 }

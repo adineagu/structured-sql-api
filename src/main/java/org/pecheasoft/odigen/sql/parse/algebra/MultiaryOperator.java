@@ -26,7 +26,7 @@ public class MultiaryOperator extends Expr {
     protected Expr[] operands; 
 
     public MultiaryOperator(Expr[] operands) {
-        super(OpType.Script);
+        super();
         this.operands = operands;
     }
 

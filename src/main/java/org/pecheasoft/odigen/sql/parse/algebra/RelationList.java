@@ -34,7 +34,7 @@ public class RelationList extends Expr {
                     || rel instanceof Join
                     || rel instanceof Projection,
                     "Only Relation, Join, or TablePrimarySubQuery can be given to RelationList, but this expr "
-                    + " is " + rel.getType());
+                    + " is " + rel.getClass().getSimpleName());
         }
     }
 

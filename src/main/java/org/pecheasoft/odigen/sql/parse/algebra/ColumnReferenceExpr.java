@@ -27,12 +27,10 @@ public final class ColumnReferenceExpr extends Expr {
     private String name;
 
     public ColumnReferenceExpr(String referenceName) {
-        super(OpType.Column);
         setName(referenceName);
     }
 
     public ColumnReferenceExpr(String qualifier, String columnName) {
-        super(OpType.Column);
         this.qualifier = qualifier;
         this.name = columnName;
     }

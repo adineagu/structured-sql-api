@@ -19,7 +19,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.pecheasoft.odigen.sql.api.ast.IDatastore;
 import org.pecheasoft.odigen.sql.api.ast.IDatastoreAttribute;
 import org.pecheasoft.odigen.sql.api.ast.IDatastoreCondition;

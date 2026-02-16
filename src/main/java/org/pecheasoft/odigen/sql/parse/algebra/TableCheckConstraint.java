@@ -45,7 +45,6 @@ public class TableCheckConstraint extends Expr implements ITableConstraint {
         return ConstraintType.CHECK_CONSTRAINT;
     }
     
-    @Override
     public OpType getType() {
         return OpType.TableCheckConstraint;
     }

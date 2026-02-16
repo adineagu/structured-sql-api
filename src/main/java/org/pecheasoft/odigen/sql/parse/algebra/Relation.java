@@ -29,7 +29,7 @@ public class Relation extends Expr {
     private String alias;
 
     protected Relation(OpType type, String relationName) {
-        super(type);
+        super();
         this.tableName = relationName;
         this.alias = CatalogUtil.getBasename(relationName);
     }

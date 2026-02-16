@@ -36,7 +36,7 @@ public class FunctionExpr extends Expr {
     }
 
     protected FunctionExpr(OpType type, String signature) {
-        super(type);
+        super();
         if (type != OpType.Function && type != OpType.CountRowsFunction) {
             throw new IllegalArgumentException("FunctionExpr cannot accept " + type + "type");
         }
@@ -44,7 +44,7 @@ public class FunctionExpr extends Expr {
     }
 
     protected FunctionExpr(OpType type, String signature, Expr[] params) {
-        super(type);
+        super();
         if (!OpType.isFunction(type)) {
             throw new IllegalArgumentException("FunctionExpr cannot accept " + type + "type");
         }

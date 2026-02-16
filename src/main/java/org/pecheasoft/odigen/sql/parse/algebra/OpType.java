@@ -17,29 +17,26 @@
  */
 package org.pecheasoft.odigen.sql.parse.algebra;
 
+/**
+ * The type of the operation.
+ */
 public enum OpType {
     RelationList,
     Relation,
     TableCheckConstraint,
-
     And,
     Or,
     Not,
-
     Plus,
-    Minus,
     Multiply,
     Divide,
     Modular,
-
     Column,
     Target,
     Function,
-
     WindowFunction,
     CountRowsFunction,
     GeneralSetFunction,
-
     Literal,
     NullLiteral,
     TimeLiteral,
@@ -47,24 +44,22 @@ public enum OpType {
     TimestampLiteral,
     IntervalLiteral,
     UnparseableString,
-
     Script,
     ODI,
     SQL,
-    SQLEXT
-    ;
+    SQLEXT;
 
+    /**
+     * Check if it is one of the logical types.
+     *
+     * @param type The type to be checked
+     * @return True if it is one of the logical types. Otherwise, it returns
+     * False.
+     */
     public static boolean isLogicalType(OpType type) {
         return type == Not || type == And || type == Or;
     }
 
-    public static boolean isArithmeticType(OpType type) {
-        return type == Plus
-                || type == Minus
-                || type == Multiply
-                || type == Divide
-                || type == Modular;
-    }
 
     /**
      * Check if it is one of the literal types.
@@ -112,5 +107,5 @@ public enum OpType {
     public static boolean isWindowFunction(OpType type) {
         return type == WindowFunction;
     }
-    
+
 }

@@ -30,22 +30,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 @JsonInclude(Include.NON_NULL)
 public abstract class Expr implements JsonSerializable, Cloneable, Annotated {
-    
-    protected OpType opType;
+
     private String text;
     private Annotated annotated = new AnnotatedObject();
-
-    public Expr() {
-        this.opType = OpType.SQL;
-    }
-
-    public Expr(OpType opType) {
-        this.opType = opType;
-    }
-
-    public OpType getType() {
-        return this.opType;
-    }
 
     @Override
     public Collection<Annotation> getAnnotations() {
@@ -60,7 +47,6 @@ public abstract class Expr implements JsonSerializable, Cloneable, Annotated {
     @Override
     public Object clone() throws CloneNotSupportedException {
         Expr newExpr = (Expr) super.clone();
-        newExpr.opType = opType;
         newExpr.annotated = (Annotated) annotated.clone();
         return newExpr;
     }

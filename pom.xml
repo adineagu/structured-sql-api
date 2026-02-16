@@ -73,7 +73,7 @@
                     </descriptorRefs>
                     <archive>
                         <manifest>
-                            <mainClass>org.pecheasoft.odigencmdline.Application</mainClass>
+                            <mainClass>org.pecheasoft.odigen.Main</mainClass>
                         </manifest>
                     </archive>
                 </configuration>
@@ -108,22 +108,22 @@
         <dependency>
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
-            <version>31.0.1-jre</version>
+            <version>33.3.1-jre</version>
         </dependency>
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-lang3</artifactId>
-
+            <version>3.17.0</version>
         </dependency>
         <dependency>
-            <groupId>commons-lang</groupId>
-            <artifactId>commons-lang</artifactId>
-            <version>2.6</version>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-text</artifactId>
+            <version>1.12.0</version>
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
-            <version>2.9.3</version>
+            <version>2.18.2</version>
             <type>jar</type>
         </dependency>
         <!-- https://mvnrepository.com/artifact/org.antlr/antlr4 -->
@@ -141,7 +141,7 @@
         <dependency>
             <groupId>org.apache.velocity</groupId>
             <artifactId>velocity-engine-core</artifactId>
-            <version>2.1</version>
+            <version>2.4.1</version>
         </dependency>
     </dependencies>
 
@@ -150,7 +150,7 @@
             <dependency>
                 <groupId>org.apache.commons</groupId>
                 <artifactId>commons-lang3</artifactId>
-                <version>3.11</version>
+                <version>3.17.0</version>
             </dependency>
             <dependency>
                 <groupId>com.google.errorprone</groupId>

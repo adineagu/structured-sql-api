@@ -59,10 +59,6 @@ public class BinaryOperator extends Expr {
         this.right = right;
     }
 
-    public BinaryOperator(OpType opType) {
-        super(opType);
-    }
-
     @SuppressWarnings("unchecked")
     public <T extends Expr> T getLeft() {
         return (T) this.left;
@@ -91,7 +87,7 @@ public class BinaryOperator extends Expr {
 
     @Override
     public String toString() {
-        return left.toString() + " " + opType.toString() + " " + right.toString();
+        return left.toString() + " " + operator.toString() + " " + right.toString();
     }
 
     @Override

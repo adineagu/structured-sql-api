@@ -1,4 +1,4 @@
-// Generated from c:/Sources/odi-generator/OdiGenLibraries/odigen-odi-parse/src/main/antlr4/org/apache/tajo/engine/parser/OdiLexer.g4 by ANTLR 4.13.1
+// Generated from c:/Sources/structured-sql-api/src/main/antlr4/org/pecheasoft/odigen/sql/parser/OdiLexer.g4 by ANTLR 4.13.1
 
 
 import org.antlr.v4.runtime.Lexer;

@@ -4,7 +4,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.pecheasoft.odigen.sql.api.ast.IASTObject;
 import org.pecheasoft.odigen.sql.api.ast.IDatastoreAttribute;
 import org.pecheasoft.odigen.sql.api.ast.IDatastoreCondition;
@@ -43,7 +43,6 @@ import org.pecheasoft.odigen.sql.parse.algebra.MultiInsertTarget;
 import org.pecheasoft.odigen.sql.parse.algebra.NamedExpr;
 import org.pecheasoft.odigen.sql.parse.algebra.NamedQuery;
 import org.pecheasoft.odigen.sql.parse.algebra.NotExpr;
-import org.pecheasoft.odigen.sql.parse.algebra.OpType;
 import org.pecheasoft.odigen.sql.parse.algebra.Projection;
 import org.pecheasoft.odigen.sql.parse.algebra.QuantifiedComparisonPredicate;
 import org.pecheasoft.odigen.sql.parse.algebra.Relation;
@@ -53,6 +52,7 @@ import org.pecheasoft.odigen.sql.parse.algebra.SetOperation;
 import org.pecheasoft.odigen.sql.parse.algebra.SimpleTableSubQuery;
 import org.pecheasoft.odigen.sql.parse.algebra.TablePrimarySubQuery;
 import org.pecheasoft.odigen.sql.parse.algebra.Unpivot;
+import org.pecheasoft.odigen.sql.parse.algebra.BinaryOperator.Operator;
 import org.pecheasoft.odigen.sql.parse.formatter.SQLExpressionFormatter;
 import org.pecheasoft.odigen.sql.parse.formatter.SQLStatementFormatter;
 import org.pecheasoft.odigen.sql.util.TUtil;
@@ -609,7 +609,7 @@ public class StructuredObjectBuilder extends BaseAlgebraVisitor<StructuredObject
         public Expr visitFilter(Context ctx, Stack<Expr> stack, Selection expr) {
             Expr condition = expr.getQual();
 
-            if (!(condition instanceof BinaryOperator && condition.getType() == OpType.And)) {
+            if (!(condition instanceof BinaryOperator && ((BinaryOperator) condition).getOperator() == Operator.And)) {
                 ctx.itemsList.add(condition);
             }
             if (expr.getQual() instanceof QuantifiedComparisonPredicate) {
@@ -631,7 +631,7 @@ public class StructuredObjectBuilder extends BaseAlgebraVisitor<StructuredObject
 
                 if (expr.getRight() instanceof BinaryOperator) {
                     BinaryOperator op = expr.getRight();
-                    if (op.getType() == OpType.And) {
+                    if (op.getOperator() == Operator.And) {
                         visit(ctx, stack, expr.getRight());
                     } else {
                         ctx.itemsList.add(expr.getRight());

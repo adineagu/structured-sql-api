@@ -23,7 +23,7 @@ import java.sql.Statement;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 
 
 public class CatalogUtil {
@@ -325,7 +325,7 @@ public class CatalogUtil {
             String projectCode = StringUtils.substringBefore(name, CatalogConstants.IDENTIFIER_DELIMITER);
             String mappingName = StringUtils.substringAfterLast(name, CatalogConstants.IDENTIFIER_DELIMITER);
             
-            return org.apache.commons.lang.StringUtils.removeEnd(org.apache.commons.lang.StringUtils.removeStart(name, projectCode+CatalogConstants.IDENTIFIER_DELIMITER), CatalogConstants.IDENTIFIER_DELIMITER+mappingName).split(CatalogConstants.IDENTIFIER_DELIMITER_REGEXP);
+            return org.apache.commons.lang3.StringUtils.removeEnd(org.apache.commons.lang3.StringUtils.removeStart(name, projectCode+CatalogConstants.IDENTIFIER_DELIMITER), CatalogConstants.IDENTIFIER_DELIMITER+mappingName).split(CatalogConstants.IDENTIFIER_DELIMITER_REGEXP);
         }
     }
 
@@ -341,7 +341,7 @@ public class CatalogUtil {
         String middleToken = "";
         String rightToken = "";
         
-        String[] tokens = org.apache.commons.lang.StringUtils.split(qualifiedName, CatalogConstants.IDENTIFIER_DELIMITER, 3);
+        String[] tokens = org.apache.commons.lang3.StringUtils.split(qualifiedName, CatalogConstants.IDENTIFIER_DELIMITER, 3);
         
         if (tokens == null) {
             return new Triple<>(leftToken, middleToken, rightToken);

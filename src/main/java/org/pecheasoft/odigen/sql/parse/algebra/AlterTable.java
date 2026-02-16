@@ -25,94 +25,20 @@ public class AlterTable extends Expr {
 
     public enum AlterTableOpType {
         RENAME_TABLE, RENAME_COLUMN, ADD_COLUMN, MODIFY_COLUMN, ADD_PRIMARY_KEY, ADD_ALTERNATE_KEY, ADD_INDEX, COMMENT
+    };
+
+    public record Model(String tableName, String newTableName, String columnName, String newColumnName, 
+        ColumnDefinition addNewColumn, ITableConstraint tableKey, String comment, AlterTableOpType alterTableOpType) {
     }
 
-    private String tableName;
-    private String newTableName;
-    private String columnName;
-    private String newColumnName;
-    private ColumnDefinition addNewColumn;
-    private ITableConstraint tableKey;
-    private String comment;
-    private AlterTableOpType alterTableOpType;
+    private final Model model;
 
-    public AlterTable(final String tableName) {
-        this.tableName = tableName;
-    }
+    public AlterTable(final Model model) {
+        this.model = model;
+    };
 
-    public String getTableName() {
-        return tableName;
+    public Model getModel() {
+        return model;
     }
-
-    public void setTableName(String tableName) {
-        this.tableName = tableName;
-    }
-
-    public String getNewTableName() {
-        return newTableName;
-    }
-
-    public void setNewTableName(String newTableName) {
-        this.newTableName = newTableName;
-    }
-
-    public String getColumnName() {
-        return columnName;
-    }
-
-    public void setColumnName(String columnName) {
-        this.columnName = columnName;
-    }
-
-    public String getNewColumnName() {
-        return newColumnName;
-    }
-
-    public void setNewColumnName(String newColumnName) {
-        this.newColumnName = newColumnName;
-    }
-
-    public ColumnDefinition getAddNewColumn() {
-        return addNewColumn;
-    }
-
-    public void setAddNewColumn(ColumnDefinition addNewColumn) {
-        this.addNewColumn = addNewColumn;
-    }
-
-    public AlterTableOpType getAlterTableOpType() {
-        return alterTableOpType;
-    }
-
-    public void setAlterTableOpType(AlterTableOpType alterTableOpType) {
-        this.alterTableOpType = alterTableOpType;
-    }
-
-    public ITableConstraint getTableKey() {
-        return tableKey;
-    }
-
-    public void setTableKey(ITableConstraint tableKey) {
-        this.tableKey = tableKey;
-    }
-
-    public String getComment() {
-        return comment;
-    }
-
-    public void setComment(String comment) {
-        this.comment = comment;
-    }
-
-    @Override
-    public Object clone() throws CloneNotSupportedException {
-        AlterTable alter = (AlterTable) super.clone();
-        alter.tableName = tableName;
-        alter.newTableName = newTableName;
-        alter.columnName = columnName;
-        alter.newColumnName = newColumnName;
-        alter.addNewColumn = (ColumnDefinition) addNewColumn.clone();
-        alter.alterTableOpType = alterTableOpType;
-        return alter;
-    }
+    
 }

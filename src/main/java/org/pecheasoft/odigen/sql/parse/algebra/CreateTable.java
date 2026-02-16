@@ -39,7 +39,7 @@ public class CreateTable extends Expr {
     private String olapType;
     FileDescriptor fileDescriptor;
     private ColumnDefinition[] tableElements;
-    private Collection<ITableConstraint> tableKeys;   
+    private Collection<ITableConstraint> tableKeys;
     private String storageType;
     private String location;
     private Expr subquery;
@@ -47,7 +47,7 @@ public class CreateTable extends Expr {
     private PartitionMethodDescExpr partition;
     private boolean ifNotExists;
     private String likeParentTable;
-    private String description;    
+    private String description;
     
     public CreateTable(final String tableName, boolean ifNotExists) {
         this.tableName = tableName;

@@ -17,10 +17,11 @@ package org.pecheasoft.odigen.sql.parse.formatter;
 import java.util.Set;
 import java.util.Stack;
 
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.pecheasoft.odigen.sql.parse.algebra.BaseAlgebraVisitor;
 import org.pecheasoft.odigen.sql.parse.algebra.BetweenPredicate;
 import org.pecheasoft.odigen.sql.parse.algebra.BinaryOperator;
+import org.pecheasoft.odigen.sql.parse.algebra.BinaryOperator.Operator;
 import org.pecheasoft.odigen.sql.parse.algebra.CaseWhenPredicate;
 import org.pecheasoft.odigen.sql.parse.algebra.CastExpr;
 import org.pecheasoft.odigen.sql.parse.algebra.CoalesceExpr;
@@ -39,7 +40,6 @@ import org.pecheasoft.odigen.sql.parse.algebra.NamedExpr;
 import org.pecheasoft.odigen.sql.parse.algebra.NotExpr;
 import org.pecheasoft.odigen.sql.parse.algebra.NullLiteral;
 import org.pecheasoft.odigen.sql.parse.algebra.NullifExpr;
-import org.pecheasoft.odigen.sql.parse.algebra.OpType;
 import org.pecheasoft.odigen.sql.parse.algebra.PatternMatchPredicate;
 import org.pecheasoft.odigen.sql.parse.algebra.Projection;
 import org.pecheasoft.odigen.sql.parse.algebra.QuantifiedComparisonPredicate;
@@ -194,15 +194,18 @@ public class SQLExpressionFormatter extends BaseAlgebraVisitor<SQLExpressionForm
         String left = visit(ctx, stack, expr.getLeft());
         String right = visit(ctx, stack, expr.getRight());
 
-        OpType leftType = expr.getLeft().getType();
-        OpType rightType = expr.getRight().getType();
-
-        if (leftType.equals(OpType.Minus) || leftType.equals(OpType.Plus)) {
-            left = "(" + left + ")";
+        if (expr.getLeft() instanceof BinaryOperator ) {
+            BinaryOperator leftExpr = (BinaryOperator) expr.getLeft();
+            if (leftExpr.getOperator().equals(Operator.Minus) || leftExpr.getOperator().equals(Operator.Plus)) {
+                left = "(" + left + ")";
+            }
         }
 
-        if (rightType.equals(OpType.Minus) || rightType.equals(OpType.Plus)) {
-            right = "(" + right + ")";
+        if (expr.getRight() instanceof BinaryOperator ) {
+            BinaryOperator rightExpr = (BinaryOperator) expr.getRight();
+            if (rightExpr.getOperator().equals(Operator.Minus) || rightExpr.getOperator().equals(Operator.Plus)) {
+                right = "(" + right + ")";
+            }
         }
 
         return left + " / " + right;
@@ -213,16 +216,20 @@ public class SQLExpressionFormatter extends BaseAlgebraVisitor<SQLExpressionForm
         String left = visit(ctx, stack, expr.getLeft());
         String right = visit(ctx, stack, expr.getRight());
 
-        OpType leftType = expr.getLeft().getType();
-        OpType rightType = expr.getRight().getType();
-
-        if (leftType.equals(OpType.Minus) || leftType.equals(OpType.Plus)) {
-            left = "(" + left + ")";
+        if (expr.getLeft() instanceof BinaryOperator ) {
+            BinaryOperator leftExpr = (BinaryOperator) expr.getLeft();
+            if (leftExpr.getOperator().equals(Operator.Minus) || leftExpr.getOperator().equals(Operator.Plus)) {
+                left = "(" + left + ")";
+            }
         }
 
-        if (rightType.equals(OpType.Minus) || rightType.equals(OpType.Plus)) {
-            right = "(" + right + ")";
+        if (expr.getRight() instanceof BinaryOperator ) {
+            BinaryOperator rightExpr = (BinaryOperator) expr.getRight();
+            if (rightExpr.getOperator().equals(Operator.Minus) || rightExpr.getOperator().equals(Operator.Plus)) {
+                right = "(" + right + ")";
+            }
         }
+
         return left + " * " + right;
     }
 
@@ -230,6 +237,21 @@ public class SQLExpressionFormatter extends BaseAlgebraVisitor<SQLExpressionForm
     public String visitMinus(SQLExpressionFormatter.Context ctx, Stack<Expr> stack, BinaryOperator expr) {
         String left = visit(ctx, stack, expr.getLeft());
         String right = visit(ctx, stack, expr.getRight());
+
+        if (expr.getLeft() instanceof BinaryOperator ) {
+            BinaryOperator leftExpr = (BinaryOperator) expr.getLeft();
+            if (leftExpr.getOperator().equals(Operator.Minus) || leftExpr.getOperator().equals(Operator.Plus)) {
+                left = "(" + left + ")";
+            }
+        }
+
+        if (expr.getRight() instanceof BinaryOperator ) {
+            BinaryOperator rightExpr = (BinaryOperator) expr.getRight();
+            if (rightExpr.getOperator().equals(Operator.Minus) || rightExpr.getOperator().equals(Operator.Plus)) {
+                right = "(" + right + ")";
+            }
+        }
+
         return left + " - " + right;
     }
 
@@ -311,9 +333,9 @@ public class SQLExpressionFormatter extends BaseAlgebraVisitor<SQLExpressionForm
 
     @Override
     public String visitBetween(SQLExpressionFormatter.Context ctx, Stack<Expr> stack, BetweenPredicate expr) {
-        String predicate = visit(ctx, stack, expr.predicand());
-        String begin = visit(ctx, stack, expr.begin());
-        String end = visit(ctx, stack, expr.end());
+        String predicate = visit(ctx, stack, expr.model().predicand());
+        String begin = visit(ctx, stack, expr.model().begin());
+        String end = visit(ctx, stack, expr.model().end());
         return String.format("%s BETWEEN %s AND %s", predicate, begin, end);
     }
 

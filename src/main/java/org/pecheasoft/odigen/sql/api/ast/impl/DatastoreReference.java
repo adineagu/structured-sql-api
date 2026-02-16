@@ -14,7 +14,7 @@
  */
 package org.pecheasoft.odigen.sql.api.ast.impl;
 
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.pecheasoft.odigen.sql.api.ast.IDatastore;
 import org.pecheasoft.odigen.sql.api.ast.IDatastoreReference;
 import org.pecheasoft.odigen.sql.util.CatalogConstants;

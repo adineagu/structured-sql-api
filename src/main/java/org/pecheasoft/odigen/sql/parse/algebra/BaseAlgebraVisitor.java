@@ -99,13 +99,13 @@ public class BaseAlgebraVisitor<CONTEXT, RESULT> implements AlgebraVisitor<CONTE
             case UnparseableString e -> visitUnparseableString(ctx, stack, e);
             case MultiInsert e -> visitMultiInsert(ctx, stack, e);
             case RowPredicandList e -> visitRowPredicandList(ctx, stack, e);
-            default -> throw new RuntimeException("Cannot support this type algebra \"" + expr.getType() + "\"" + " for class \"" + expr.getClassName() + "\"");
+            default -> throw new RuntimeException("Cannot support this type algebra \"" + expr.getClassName() + "\"" + " for class \"" + expr.getClassName() + "\"");
         };
 
         // skip postHook against only one relation
-        if (expr.getType() == OpType.RelationList) {
+        if (expr instanceof RelationList) {
             RelationList relationList = (RelationList) expr;
-            if (relationList.size() == 1 && relationList.getRelations()[0].getType() == OpType.Relation) {
+            if (relationList.size() == 1 && relationList.getRelations()[0] instanceof Relation) {
                 return current;
             }
         }
@@ -455,9 +455,9 @@ public class BaseAlgebraVisitor<CONTEXT, RESULT> implements AlgebraVisitor<CONTE
     @Override
     public RESULT visitBetween(CONTEXT ctx, Stack<Expr> stack, BetweenPredicate expr) {
         stack.push(expr);
-        RESULT result = visit(ctx, stack, expr.predicand());
-        visit(ctx, stack, expr.begin());
-        visit(ctx, stack, expr.end());
+        RESULT result = visit(ctx, stack, expr.model().predicand());
+        visit(ctx, stack, expr.model().begin());
+        visit(ctx, stack, expr.model().end());
         stack.pop();
         return result;
     }

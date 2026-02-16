@@ -42,7 +42,7 @@ public class NamedExpr extends UnaryOperator {
     private String alias;
 
     public NamedExpr(Expr expr) {
-        super(OpType.Target);
+        super();
         setChild(expr);
     }
 

@@ -26,8 +26,8 @@ import java.nio.charset.CoderResult;
 import java.nio.charset.CodingErrorAction;
 import java.util.Arrays;
 import java.util.BitSet;
-import org.apache.commons.lang.CharUtils;
-import org.apache.commons.lang.StringEscapeUtils;
+import org.apache.commons.lang3.CharUtils;
+import org.apache.commons.text.StringEscapeUtils;
 
 public class StringUtil {
 

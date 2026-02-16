@@ -26,6 +26,7 @@ public class Main {
     public static void main(String[] args) {
         Main main = new Main();
 
+        // parse a SQL statement and write the structured AST to a file
         String stmt = main.readStream(main.getFileFromResourceAsStream("sql/01_simple_select.sql"));
         Expr expr = main.parse(stmt);
         main.writeToFile("target/01_simple_select_expr.json", expr.toJson());
@@ -33,9 +34,23 @@ public class Main {
         IASTObject struct = StructuredObjectBuilder.getStructuredObject(expr);
         main.writeToFile("target/01_simple_select_ast.json", struct.toJson());
 
+        // parse a CREATE TABLE statement and write the structured AST to a file
+        stmt = main.readStream(main.getFileFromResourceAsStream("sql/02_create_table.sql"));
+        expr = main.parse(stmt);
+        main.writeToFile("target/02_create_table_expr.json", expr.toJson());
+
+        struct = StructuredObjectBuilder.getStructuredObject(expr);
+        main.writeToFile("target/02_create_table_ast.json", struct.toJson());
+
+        // apply a template to the structured AST and write the result to a file
         String templateBody = main.readStream(main.getFileFromResourceAsStream("template/create_datastore.vtl"));
         String evalResult = main.evaluateTemplate("create_datastore", templateBody, struct);
         main.writeToFile("target/02_create_datastore.sql", evalResult);
+
+        // parse an ALTER TABLE statement and write the structured AST to a file
+        stmt = main.readStream(main.getFileFromResourceAsStream("sql/03_alter_table.sql"));
+        expr = main.parse(stmt);
+        main.writeToFile("target/03_alter_table_expr.json", expr.toJson());
     }
 
     private Expr parse(String stmt) {

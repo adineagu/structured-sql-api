@@ -29,10 +29,6 @@ public abstract class UnaryOperator extends Expr {
   public UnaryOperator() {
     super();
   }
-  
-  public UnaryOperator(OpType type) {
-    super(type);
-  }
 
   public Expr getChild() {
     return this.child;

@@ -14,7 +14,7 @@
  */
 package org.pecheasoft.odigen.sql.api.ast;
 
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.pecheasoft.odigen.sql.util.TUtil;
 
 /**

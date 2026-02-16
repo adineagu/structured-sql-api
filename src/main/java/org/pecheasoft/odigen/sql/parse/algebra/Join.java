@@ -40,6 +40,7 @@ public class Join extends BinaryOperator {
     private ColumnReferenceExpr[] joinColumns;
     private boolean natural = false;
     private boolean implementAsLookup;
+    private LookupJoin lookup;
 
     public Join(JoinType joinType) {
         this.joinType = joinType;
@@ -120,6 +121,14 @@ public class Join extends BinaryOperator {
         this.implementAsLookup = implementAsLookup;
     }
 
+    public LookupJoin getLookup() {
+        return lookup;
+    }
+
+    public void setLookup(LookupJoin lookup) {
+        this.lookup = lookup;
+    }
+
     @Override
     public Object clone() throws CloneNotSupportedException {
         Join join = (Join) super.clone();
@@ -135,4 +144,29 @@ public class Join extends BinaryOperator {
 
         return join;
     }
+
+    public static class LookupJoin extends Expr {
+
+        public enum LookupMatchRowRule {FIRST_ROW, LAST_ROW, ALL_ROWS};
+        
+        private LookupMatchRowRule matchRowRule;
+        private Sort sortExpr;
+    
+        public LookupMatchRowRule getMatchRowRule() {
+            return matchRowRule;
+        }
+    
+        public void setMatchRowRule(LookupMatchRowRule matchRowRule) {
+            this.matchRowRule = matchRowRule;
+        }
+    
+        public Sort getSortExpr() {
+            return sortExpr;
+        }
+    
+        public void setSortExpr(Sort sortExpr) {
+            this.sortExpr = sortExpr;
+        }
+        
+    }    
 }

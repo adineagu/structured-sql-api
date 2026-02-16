@@ -20,7 +20,7 @@ package org.pecheasoft.odigen.sql.parse;
 
 
 import org.antlr.v4.runtime.Token;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 
 public class SQLParseError extends RuntimeException {
   private final String header;

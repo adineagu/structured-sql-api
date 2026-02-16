@@ -33,11 +33,6 @@ public class CoalesceExpr extends Expr {
     public CoalesceExpr(List<Expr> operands) {
         this.operands = operands;
     }
-    
-    public CoalesceExpr(OpType opType, List<Expr> operands) {
-        super(opType);
-        this.operands = operands;
-    }    
 
     public List<Expr> getOperands() {
         return operands;

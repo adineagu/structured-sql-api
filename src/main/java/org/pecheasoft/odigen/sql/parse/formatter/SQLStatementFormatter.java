@@ -20,7 +20,7 @@ import java.util.Stack;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.pecheasoft.odigen.sql.parse.algebra.Aggregation;
 import org.pecheasoft.odigen.sql.parse.algebra.BaseAlgebraVisitor;
 import org.pecheasoft.odigen.sql.parse.algebra.ColumnDefinition;

@@ -39,6 +39,7 @@ import org.pecheasoft.odigen.sql.parse.algebra.AlterTable.AlterTableOpType;
 import org.pecheasoft.odigen.sql.parse.algebra.AlterTablespace;
 import org.pecheasoft.odigen.sql.parse.algebra.BetweenPredicate;
 import org.pecheasoft.odigen.sql.parse.algebra.BinaryOperator;
+import org.pecheasoft.odigen.sql.parse.algebra.BinaryOperator.Operator;
 import org.pecheasoft.odigen.sql.parse.algebra.BooleanLiteral;
 import org.pecheasoft.odigen.sql.parse.algebra.CaseWhenPredicate;
 import org.pecheasoft.odigen.sql.parse.algebra.CastExpr;
@@ -86,8 +87,8 @@ import org.pecheasoft.odigen.sql.parse.algebra.NamedQuery;
 import org.pecheasoft.odigen.sql.parse.algebra.NotExpr;
 import org.pecheasoft.odigen.sql.parse.algebra.NullLiteral;
 import org.pecheasoft.odigen.sql.parse.algebra.NullifExpr;
-import org.pecheasoft.odigen.sql.parse.algebra.OpType;
 import org.pecheasoft.odigen.sql.parse.algebra.PatternMatchPredicate;
+import org.pecheasoft.odigen.sql.parse.algebra.PatternMatchPredicate.MatchType;
 import org.pecheasoft.odigen.sql.parse.algebra.Projection;
 import org.pecheasoft.odigen.sql.parse.algebra.QualifiedAsteriskExpr;
 import org.pecheasoft.odigen.sql.parse.algebra.QuantifiedComparisonPredicate;
@@ -123,9 +124,18 @@ import org.pecheasoft.odigen.sql.parser.SQLParser;
 import static org.pecheasoft.odigen.sql.parser.SQLParser.ADD;
 import static org.pecheasoft.odigen.sql.parser.SQLParser.ALL;
 import static org.pecheasoft.odigen.sql.parser.SQLParser.ALTERNATE_KEY;
+import static org.pecheasoft.odigen.sql.parser.SQLParser.COLUMN;
+import static org.pecheasoft.odigen.sql.parser.SQLParser.DIVIDE;
+import static org.pecheasoft.odigen.sql.parser.SQLParser.INTERSECT;
+import static org.pecheasoft.odigen.sql.parser.SQLParser.MODIFY;
+import static org.pecheasoft.odigen.sql.parser.SQLParser.MULTIPLY;
+import static org.pecheasoft.odigen.sql.parser.SQLParser.PLUS;
+import static org.pecheasoft.odigen.sql.parser.SQLParser.PRIMARY_KEY;
+import static org.pecheasoft.odigen.sql.parser.SQLParser.RENAME;
+import static org.pecheasoft.odigen.sql.parser.SQLParser.TO;
+import static org.pecheasoft.odigen.sql.parser.SQLParser.UNION;
 import org.pecheasoft.odigen.sql.parser.SQLParser.Annotated_joined_table_primaryContext;
 import org.pecheasoft.odigen.sql.parser.SQLParser.AnnotationContext;
-import static org.pecheasoft.odigen.sql.parser.SQLParser.COLUMN;
 import org.pecheasoft.odigen.sql.parser.SQLParser.Case_abbreviationContext;
 import org.pecheasoft.odigen.sql.parser.SQLParser.Character_factorContext;
 import org.pecheasoft.odigen.sql.parser.SQLParser.Column_nameContext;
@@ -134,7 +144,6 @@ import org.pecheasoft.odigen.sql.parser.SQLParser.Common_value_expressionContext
 import org.pecheasoft.odigen.sql.parser.SQLParser.Constraint_controlContext;
 import org.pecheasoft.odigen.sql.parser.SQLParser.Convert_specificationContext;
 import org.pecheasoft.odigen.sql.parser.SQLParser.Cursor_functionContext;
-import static org.pecheasoft.odigen.sql.parser.SQLParser.DIVIDE;
 import org.pecheasoft.odigen.sql.parser.SQLParser.Datastore_checkContext;
 import org.pecheasoft.odigen.sql.parser.SQLParser.Datastore_constraintContext;
 import org.pecheasoft.odigen.sql.parser.SQLParser.Datastore_keyContext;
@@ -145,17 +154,16 @@ import org.pecheasoft.odigen.sql.parser.SQLParser.Field_elementContext;
 import org.pecheasoft.odigen.sql.parser.SQLParser.File_descriptorContext;
 import org.pecheasoft.odigen.sql.parser.SQLParser.File_resource_nameContext;
 import org.pecheasoft.odigen.sql.parser.SQLParser.Hash_partitionsContext;
-import static org.pecheasoft.odigen.sql.parser.SQLParser.INTERSECT;
 import org.pecheasoft.odigen.sql.parser.SQLParser.IdentifierContext;
 import org.pecheasoft.odigen.sql.parser.SQLParser.In_databaseContext;
 import org.pecheasoft.odigen.sql.parser.SQLParser.Index_inlineContext;
 import org.pecheasoft.odigen.sql.parser.SQLParser.Integration_paramsContext;
 import org.pecheasoft.odigen.sql.parser.SQLParser.Is_clauseContext;
+import org.pecheasoft.odigen.sql.parser.SQLParser.Joined_table_primaryContext;
 import org.pecheasoft.odigen.sql.parser.SQLParser.List_partitionsContext;
 import org.pecheasoft.odigen.sql.parser.SQLParser.List_value_partitionContext;
 import org.pecheasoft.odigen.sql.parser.SQLParser.Listagg_functionContext;
-import static org.pecheasoft.odigen.sql.parser.SQLParser.MODIFY;
-import static org.pecheasoft.odigen.sql.parser.SQLParser.MULTIPLY;
+import org.pecheasoft.odigen.sql.parser.SQLParser.Lookup_specificationContext;
 import org.pecheasoft.odigen.sql.parser.SQLParser.Modify_field_elementContext;
 import org.pecheasoft.odigen.sql.parser.SQLParser.Negativable_matcherContext;
 import org.pecheasoft.odigen.sql.parser.SQLParser.Non_join_query_termContext;
@@ -163,13 +171,10 @@ import org.pecheasoft.odigen.sql.parser.SQLParser.Numeric_value_functionContext;
 import org.pecheasoft.odigen.sql.parser.SQLParser.Ordinary_grouping_setContext;
 import org.pecheasoft.odigen.sql.parser.SQLParser.Ordinary_grouping_set_listContext;
 import org.pecheasoft.odigen.sql.parser.SQLParser.Outer_join_type_part2Context;
-import static org.pecheasoft.odigen.sql.parser.SQLParser.PLUS;
-import static org.pecheasoft.odigen.sql.parser.SQLParser.PRIMARY_KEY;
 import org.pecheasoft.odigen.sql.parser.SQLParser.Qualified_asteriskContext;
 import org.pecheasoft.odigen.sql.parser.SQLParser.Quantified_comparison_predicateContext;
 import org.pecheasoft.odigen.sql.parser.SQLParser.Query_expressionContext;
 import org.pecheasoft.odigen.sql.parser.SQLParser.Query_primaryContext;
-import static org.pecheasoft.odigen.sql.parser.SQLParser.RENAME;
 import org.pecheasoft.odigen.sql.parser.SQLParser.Range_partitionsContext;
 import org.pecheasoft.odigen.sql.parser.SQLParser.Range_value_clauseContext;
 import org.pecheasoft.odigen.sql.parser.SQLParser.Rank_function_typeContext;
@@ -182,11 +187,9 @@ import org.pecheasoft.odigen.sql.parser.SQLParser.Simple_when_clauseContext;
 import org.pecheasoft.odigen.sql.parser.SQLParser.SingleSqlScriptContext;
 import org.pecheasoft.odigen.sql.parser.SQLParser.Sort_specifier_listContext;
 import org.pecheasoft.odigen.sql.parser.SQLParser.SqlContext;
-import static org.pecheasoft.odigen.sql.parser.SQLParser.TO;
 import org.pecheasoft.odigen.sql.parser.SQLParser.Table_nameContext;
 import org.pecheasoft.odigen.sql.parser.SQLParser.TermContext;
 import org.pecheasoft.odigen.sql.parser.SQLParser.Trim_specificationContext;
-import static org.pecheasoft.odigen.sql.parser.SQLParser.UNION;
 import org.pecheasoft.odigen.sql.parser.SQLParser.Unpivot_clauseContext;
 import org.pecheasoft.odigen.sql.parser.SQLParser.Unpivot_ruleContext;
 import org.pecheasoft.odigen.sql.parser.SQLParser.Unpivot_rulesContext;
@@ -209,16 +212,10 @@ import org.pecheasoft.odigen.sql.util.annotation.impl.DefaultAnnotation;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
-import org.pecheasoft.odigen.sql.parse.algebra.BinaryOperator.Operator;
-import org.pecheasoft.odigen.sql.parse.algebra.PatternMatchPredicate.MatchType;
 
 public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
 
     public SQLAnalyzer() {
-    }
-
-    protected static boolean checkIfExist(Object obj) {
-        return obj != null;
     }
 
     @Override
@@ -242,7 +239,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
         Expr statement = visit(ctx.statement());
         statement.setText(sqlText);        
         
-        if (checkIfExist(ctx.explain_clause())) {
+        if (Objects.nonNull(ctx.explain_clause())) {
             return new Explain(statement);
         } else {
             return statement;
@@ -260,7 +257,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
         Expr statement = visit(ctx.statement());
         statement.setText(sqlText);        
         
-        if (checkIfExist(ctx.explain_clause())) {
+        if (Objects.nonNull(ctx.explain_clause())) {
             return new Explain(statement);
         } else {
             return statement;
@@ -270,29 +267,29 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
     @Override
     public Expr visitSession_statement(SQLParser.Session_statementContext ctx) {
 
-        if (checkIfExist(ctx.CATALOG())) {
+        if (Objects.nonNull(ctx.CATALOG())) {
 
             return new SetSession("CURRENT_DATABASE", ctx.dbname.getText());
 
-        } else if (checkIfExist(ctx.name)) {
+        } else if (Objects.nonNull(ctx.name)) {
             String value;
-            if (checkIfExist(ctx.boolean_literal())) {
+            if (Objects.nonNull(ctx.boolean_literal())) {
                 value = ctx.boolean_literal().getText();
-            } else if (checkIfExist(ctx.Character_String_Literal())) {
+            } else if (Objects.nonNull(ctx.Character_String_Literal())) {
                 value = stripQuote(ctx.Character_String_Literal().getText());
-            } else if (checkIfExist(ctx.signed_numerical_literal())) {
+            } else if (Objects.nonNull(ctx.signed_numerical_literal())) {
                 value = ctx.signed_numerical_literal().getText();
             } else {
                 value = null;
             }
             return new SetSession(ctx.name.getText(), value);
 
-        } else if (checkIfExist(ctx.TIME()) && checkIfExist(ctx.ZONE())) {
+        } else if (Objects.nonNull(ctx.TIME()) && Objects.nonNull(ctx.ZONE())) {
 
             String value;
-            if (checkIfExist(ctx.Character_String_Literal())) {
+            if (Objects.nonNull(ctx.Character_String_Literal())) {
                 value = stripQuote(ctx.Character_String_Literal().getText());
-            } else if (checkIfExist(ctx.signed_numerical_literal())) {
+            } else if (Objects.nonNull(ctx.signed_numerical_literal())) {
                 value = ctx.signed_numerical_literal().getText();
             } else {
                 value = null;
@@ -360,7 +357,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
             SetOperation setOp = new SetOperation(SetOperation.Type.UNION, operands.toArray(Expr[]::new), opTypes.toArray(SetOperation.Type[]::new),
                     distInds.toArray(Boolean[]::new));
             
-            if (checkIfExist(ctx.annotation())) {
+            if (Objects.nonNull(ctx.annotation())) {
                 Collection<Annotation> annotations = getAnnotations(ctx.annotation());
                 setOp.setAnnotations(annotations);            
             }  
@@ -457,7 +454,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
                 current = sort;
             }
 
-            if (checkIfExist(ctx.table_expression().window_clause())) {
+            if (Objects.nonNull(ctx.table_expression().window_clause())) {
                 Window window = visitWindow_clause(ctx.table_expression().window_clause());
                 window.setChild(current);
                 current = window;
@@ -487,7 +484,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
             projection.setDatasetHint(hint);
         }
         
-        if (checkIfExist(ctx.annotation())) {
+        if (Objects.nonNull(ctx.annotation())) {
             Collection<Annotation> annotations = getAnnotations(ctx.annotation());
             projection.setAnnotations(annotations);            
         }        
@@ -558,7 +555,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
         String locatorFieldName = null;
         Map<String, Collection<String>> pivotMap = TUtil.newHashMap();
         
-        if (checkIfExist(ctx.locator.Regular_Identifier())) {
+        if (Objects.nonNull(ctx.locator.Regular_Identifier())) {
             locatorFieldName = ctx.locator.Regular_Identifier().getText(); 
         }
         
@@ -581,9 +578,9 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
             
             String locatorValue = null;
             
-            if (checkIfExist(ruleCtx.Character_String_Literal())) {
+            if (Objects.nonNull(ruleCtx.Character_String_Literal())) {
                 locatorValue = ruleCtx.Character_String_Literal().getText();
-            } else if (checkIfExist(ruleCtx.signed_numerical_literal())) {
+            } else if (Objects.nonNull(ruleCtx.signed_numerical_literal())) {
                 locatorValue = ruleCtx.signed_numerical_literal().getText();
             }
             
@@ -640,7 +637,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
                 clause.setGroups(groups.subList(1, groupSize).toArray(new GroupElement[groupSize - 1]));
             }
             
-            if (checkIfExist(ctx.annotation())) {
+            if (Objects.nonNull(ctx.annotation())) {
                 Collection<Annotation> annotations = getAnnotations(ctx.annotation());
                 clause.setAnnotations(annotations);            
             }              
@@ -666,16 +663,16 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
         
         WindowSpec windowSpec = null;
         
-        if (checkIfExist(ctx.window_name_or_specification())) {
+        if (Objects.nonNull(ctx.window_name_or_specification())) {
             Window_name_or_specificationContext windowNameOrSpec = ctx.window_name_or_specification();
-            if (checkIfExist(windowNameOrSpec.window_name())) {
+            if (Objects.nonNull(windowNameOrSpec.window_name())) {
                 windowFunction.setWindowName(windowNameOrSpec.window_name().getText());
             } else {
                 windowSpec = buildWindowSpec(windowNameOrSpec.window_specification());                
             }            
         }  
         
-        if (checkIfExist(ctx.orderby_clause())) {
+        if (Objects.nonNull(ctx.orderby_clause())) {
             if (windowSpec == null) {
                 windowSpec = new WindowSpec();
             }
@@ -693,26 +690,26 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
 
         Window_function_typeContext functionType = context.window_function_type();
         GeneralSetFunctionExpr functionBody;
-        if (checkIfExist(functionType.rank_function_type())) {
+        if (Objects.nonNull(functionType.rank_function_type())) {
             Rank_function_typeContext rankFunction = functionType.rank_function_type();
-            if (checkIfExist(rankFunction.RANK())) {
+            if (Objects.nonNull(rankFunction.RANK())) {
                 functionBody = new GeneralSetFunctionExpr("rank", false, new Expr[]{});
-            } else if (checkIfExist(rankFunction.DENSE_RANK())) {
+            } else if (Objects.nonNull(rankFunction.DENSE_RANK())) {
                 functionBody = new GeneralSetFunctionExpr("dense_rank", false, new Expr[]{});
-            } else if (checkIfExist(rankFunction.PERCENT_RANK())) {
+            } else if (Objects.nonNull(rankFunction.PERCENT_RANK())) {
                 functionBody = new GeneralSetFunctionExpr("percent_rank", false, new Expr[]{});
             } else {
                 functionBody = new GeneralSetFunctionExpr("cume_dist", false, new Expr[]{});
             }
-        } else if (checkIfExist(functionType.ROW_NUMBER())) {
+        } else if (Objects.nonNull(functionType.ROW_NUMBER())) {
             functionBody = new GeneralSetFunctionExpr("row_number", false, new Expr[]{});
-        } else if (checkIfExist(functionType.FIRST_VALUE())) {
+        } else if (Objects.nonNull(functionType.FIRST_VALUE())) {
             functionBody = new GeneralSetFunctionExpr("first_value", false, new Expr[]{visitValue_expression(functionType.value_expression())});
-        } else if (checkIfExist(functionType.LAST_VALUE())) {
+        } else if (Objects.nonNull(functionType.LAST_VALUE())) {
             functionBody = new GeneralSetFunctionExpr("last_value", false, new Expr[]{visitValue_expression(functionType.value_expression())});
-        } else if (checkIfExist(functionType.LAG())) {
-            if (checkIfExist(functionType.numeric_value_expression())) {
-                if (checkIfExist(functionType.common_value_expression())) {
+        } else if (Objects.nonNull(functionType.LAG())) {
+            if (Objects.nonNull(functionType.numeric_value_expression())) {
+                if (Objects.nonNull(functionType.common_value_expression())) {
                     functionBody = new GeneralSetFunctionExpr("lag", false, new Expr[]{
                         visitValue_expression(functionType.value_expression()),
                         visitNumeric_value_expression(functionType.numeric_value_expression()),
@@ -725,9 +722,9 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
             } else {
                 functionBody = new GeneralSetFunctionExpr("lag", false, new Expr[]{visitValue_expression(functionType.value_expression())});
             }
-        } else if (checkIfExist(functionType.LEAD())) {
-            if (checkIfExist(functionType.numeric_value_expression())) {
-                if (checkIfExist(functionType.common_value_expression())) {
+        } else if (Objects.nonNull(functionType.LEAD())) {
+            if (Objects.nonNull(functionType.numeric_value_expression())) {
+                if (Objects.nonNull(functionType.common_value_expression())) {
                     functionBody = new GeneralSetFunctionExpr("lead", false, new Expr[]{visitValue_expression(functionType.value_expression()),
                         visitNumeric_value_expression(functionType.numeric_value_expression()),
                         visitCommon_value_expression(functionType.common_value_expression())});
@@ -744,13 +741,13 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
         windowFunction = new WindowFunctionExpr(functionBody);
 
         Window_name_or_specificationContext windowNameOrSpec = context.window_name_or_specification();
-        if (checkIfExist(windowNameOrSpec.window_name())) {
+        if (Objects.nonNull(windowNameOrSpec.window_name())) {
             windowFunction.setWindowName(windowNameOrSpec.window_name().getText());
         } else {
             windowFunction.setWindowSpec(buildWindowSpec(windowNameOrSpec.window_specification()));
         }
         
-        if (checkIfExist(functionType.window_function_nulls_clause())) {
+        if (Objects.nonNull(functionType.window_function_nulls_clause())) {
             String whatToDoWithNulls = functionType.window_function_nulls_clause().getText();
             windowFunction.setNullOption(whatToDoWithNulls);
         }        
@@ -773,29 +770,29 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
 
     public WindowSpec buildWindowSpec(SQLParser.Window_specificationContext ctx) {
         WindowSpec windowSpec = new WindowSpec();
-        if (checkIfExist(ctx.window_specification_details())) {
+        if (Objects.nonNull(ctx.window_specification_details())) {
             Window_specification_detailsContext windowSpecDetail = ctx.window_specification_details();
 
-            if (checkIfExist(windowSpecDetail.existing_window_name())) {
+            if (Objects.nonNull(windowSpecDetail.existing_window_name())) {
                 windowSpec.setWindowName(windowSpecDetail.existing_window_name().getText());
             }
 
-            if (checkIfExist(windowSpecDetail.window_partition_clause())) {
+            if (Objects.nonNull(windowSpecDetail.window_partition_clause())) {
                 windowSpec.setPartitionKeys(
                         buildRowValuePredicands(windowSpecDetail.window_partition_clause().row_value_predicand_list()));
             }
 
-            if (checkIfExist(windowSpecDetail.window_order_clause())) {
+            if (Objects.nonNull(windowSpecDetail.window_order_clause())) {
                 windowSpec.setSortSpecs(
                         buildSortSpecs(windowSpecDetail.window_order_clause().orderby_clause().sort_specifier_list()));
             }
 
-            if (checkIfExist(windowSpecDetail.window_frame_clause())) {
+            if (Objects.nonNull(windowSpecDetail.window_frame_clause())) {
                 Window_frame_clauseContext frameContext = windowSpecDetail.window_frame_clause();
 
                 WindowSpec.WindowFrameUnit unit;
                 // frame unit - there are only two cases: RANGE and ROW
-                if (checkIfExist(frameContext.window_frame_units().RANGE())) {
+                if (Objects.nonNull(frameContext.window_frame_units().RANGE())) {
                     unit = WindowSpec.WindowFrameUnit.RANGE;
                 } else {
                     unit = WindowSpec.WindowFrameUnit.ROW;
@@ -803,7 +800,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
 
                 WindowSpec.WindowFrame windowFrame;
 
-                if (checkIfExist(frameContext.window_frame_extent().window_frame_between())) { // when 'between' is given
+                if (Objects.nonNull(frameContext.window_frame_extent().window_frame_between())) { // when 'between' is given
                     Window_frame_betweenContext between = frameContext.window_frame_extent().window_frame_between();
                     WindowSpec.WindowStartBound startBound = buildWindowStartBound(between.window_frame_start_bound());
                     WindowSpec.WindowEndBound endBound = buildWindowEndBound(between.window_frame_end_bound());
@@ -823,9 +820,9 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
 
     public WindowSpec.WindowStartBound buildWindowStartBound(Window_frame_start_boundContext context) {
         WindowFrameStartBoundType boundType;
-        if (checkIfExist(context.UNBOUNDED())) {
+        if (Objects.nonNull(context.UNBOUNDED())) {
             boundType = WindowFrameStartBoundType.UNBOUNDED_PRECEDING;
-        } else if (checkIfExist(context.unsigned_value_specification())) {
+        } else if (Objects.nonNull(context.unsigned_value_specification())) {
             boundType = WindowFrameStartBoundType.PRECEDING;
         } else {
             boundType = WindowFrameStartBoundType.CURRENT_ROW;
@@ -841,9 +838,9 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
 
     public WindowSpec.WindowEndBound buildWindowEndBound(Window_frame_end_boundContext context) {
         WindowFrameEndBoundType boundType;
-        if (checkIfExist(context.UNBOUNDED())) {
+        if (Objects.nonNull(context.UNBOUNDED())) {
             boundType = WindowFrameEndBoundType.UNBOUNDED_FOLLOWING;
-        } else if (checkIfExist(context.unsigned_value_specification())) {
+        } else if (Objects.nonNull(context.unsigned_value_specification())) {
             boundType = WindowFrameEndBoundType.FOLLOWING;
         } else {
             boundType = WindowFrameEndBoundType.CURRENT_ROW;
@@ -885,7 +882,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
     public Sort visitOrderby_clause(SQLParser.Orderby_clauseContext ctx) {
         Sort orderBy = new Sort(buildSortSpecs(ctx.sort_specifier_list()));
         
-        if (checkIfExist(ctx.annotation())) {
+        if (Objects.nonNull(ctx.annotation())) {
             Collection<Annotation> annotations = getAnnotations(ctx.annotation());
             orderBy.setAnnotations(annotations);            
         }
@@ -917,7 +914,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
     @Override
     public Join visitAnnotated_joined_table_primary(Annotated_joined_table_primaryContext ctx) {
         Join join = visitJoined_table_primary(ctx.joined_table_primary());
-        if (checkIfExist(ctx.annotation())) {
+        if (Objects.nonNull(ctx.annotation())) {
             Collection<Annotation> annotations = getAnnotations(ctx.annotation());
             join.setAnnotations(annotations);            
         }
@@ -925,16 +922,14 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
         return join;
     }
     
-    
-    
     @Override
-    public Join visitJoined_table_primary(SQLParser.Joined_table_primaryContext ctx) {
+    public Join visitJoined_table_primary(Joined_table_primaryContext ctx) {
         Join join;
         if (ctx.CROSS() != null) {
             join = new Join(JoinType.CROSS);
         } else if (ctx.UNION() != null) {
             join = new Join(JoinType.UNION);
-        } else { // qualified join or natural
+        } else {
             if (ctx.join_type() != null && ctx.join_type().outer_join_type() != null) {
                 Outer_join_type_part2Context outer_join_typeContext = ctx.join_type().outer_join_type()
                         .outer_join_type_part2();
@@ -953,7 +948,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
                 join.setNatural();
             }
 
-            if (ctx.join_specification() != null) { // only for qualified join
+            if (ctx.join_specification() != null) {
                 if (ctx.join_specification().join_condition() != null) {
                     Expr searchCondition = visitSearch_condition(ctx.join_specification().
                             join_condition().search_condition());
@@ -967,6 +962,25 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
                             named_columns_join().column_reference_list()));
                 }
                 
+                if (ctx.join_specification().lookup_specification() != null) {
+                    Join.LookupJoin lkpJoin = new Join.LookupJoin();
+                    Lookup_specificationContext lkpCtx = ctx.join_specification().lookup_specification();
+                    
+                    if (Objects.nonNull(lkpCtx.orderby_clause())) {
+                        Sort sort = (Sort) visitOrderby_clause(lkpCtx.orderby_clause());
+                        lkpJoin.setSortExpr(sort);
+                    }
+                    
+                    if (lkpCtx.first_row() != null) {
+                        lkpJoin.setMatchRowRule(Join.LookupJoin.LookupMatchRowRule.FIRST_ROW);
+                    } else if (lkpCtx.all_rows() != null) {
+                        lkpJoin.setMatchRowRule(Join.LookupJoin.LookupMatchRowRule.ALL_ROWS);
+                    } else if (lkpCtx.last_row() != null) {
+                        lkpJoin.setMatchRowRule(Join.LookupJoin.LookupMatchRowRule.LAST_ROW);
+                    }
+                    
+                    join.setLookup(lkpJoin);
+                }
             }                        
 
         }
@@ -1059,7 +1073,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
     public Expr visitQuery_expression(Query_expressionContext ctx) {
         Query query = new Query();
         
-        if (checkIfExist(ctx.with_clause())) {
+        if (Objects.nonNull(ctx.with_clause())) {
             List<Expr> namedQueries = TUtil.newList();
             ctx.with_clause().named_query().stream().map((named_query_ctx) -> {
                 NamedQuery namedQry = new NamedQuery(named_query_ctx.name.getText());
@@ -1077,8 +1091,13 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
         Expr predicand = visitRow_value_predicand(ctx.predicand);
         Expr begin = visitRow_value_predicand(ctx.between_predicate_part_2().begin);
         Expr end = visitRow_value_predicand(ctx.between_predicate_part_2().end);
-        return new BetweenPredicate(checkIfExist(ctx.between_predicate_part_2().NOT()),
-                checkIfExist(ctx.between_predicate_part_2().SYMMETRIC()), predicand, begin, end);
+
+        BetweenPredicate.Model model = new BetweenPredicate.Model(
+            Objects.nonNull(ctx.between_predicate_part_2().NOT()), 
+            Objects.nonNull(ctx.between_predicate_part_2().SYMMETRIC()),
+            predicand, begin, end);
+
+        return new BetweenPredicate(model);
     }
 
     @Override
@@ -1143,9 +1162,9 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
 
     @Override
     public Expr visitCommon_value_expression(SQLParser.Common_value_expressionContext ctx) {
-        if (checkIfExist(ctx.NULL())) {
+        if (Objects.nonNull(ctx.NULL())) {
             return new NullLiteral();
-        } else if (checkIfExist(ctx.ODIREF())) {
+        } else if (Objects.nonNull(ctx.ODIREF())) {
             return new LiteralValue(ctx.ODIREF().getText(), LiteralType.Unsigned_Integer);
         } else {
             return visitChildren(ctx);
@@ -1192,12 +1211,12 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
         
         Collection<Annotation> annotations = null;
         
-        if (checkIfExist(ctx.annotation())) {
+        if (Objects.nonNull(ctx.annotation())) {
             annotations = getAnnotations(ctx.annotation());
             current.setAnnotations(annotations);
         }
         
-        if (current instanceof BinaryOperator && ((BinaryOperator) current).getType().equals(OpType.And)) {
+        if (current instanceof BinaryOperator && ((BinaryOperator) current).getOperator().equals(Operator.And)) {
             BinaryOperator cbo = (BinaryOperator) current;
             
             if (cbo.getLeft() instanceof InPredicate || cbo.getLeft() instanceof QuantifiedComparisonPredicate || cbo.getLeft() instanceof ExistsPredicate) {
@@ -1230,16 +1249,16 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
 
     @Override
     public Expr visitBoolean_test(SQLParser.Boolean_testContext ctx) {
-        if (checkIfExist(ctx.is_clause())) {
+        if (Objects.nonNull(ctx.is_clause())) {
             Is_clauseContext isClauseContext = ctx.is_clause();
-            if (checkIfExist(isClauseContext.NOT())) {
-                if (checkIfExist(ctx.is_clause().truth_value().TRUE())) {
+            if (Objects.nonNull(isClauseContext.NOT())) {
+                if (Objects.nonNull(ctx.is_clause().truth_value().TRUE())) {
                     return new NotExpr(visitBoolean_primary(ctx.boolean_primary()));
                 } else {
                     return visitBoolean_primary(ctx.boolean_primary());
                 }
             } else {
-                if (checkIfExist(ctx.is_clause().truth_value().TRUE())) {
+                if (Objects.nonNull(ctx.is_clause().truth_value().TRUE())) {
                     return visitBoolean_primary(ctx.boolean_primary());
                 } else {
                     return new NotExpr(visitBoolean_primary(ctx.boolean_primary()));
@@ -1261,7 +1280,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
 
     @Override
     public Expr visitBoolean_predicand(SQLParser.Boolean_predicandContext ctx) {
-        if (checkIfExist(ctx.nonparenthesized_value_expression_primary())) {
+        if (Objects.nonNull(ctx.nonparenthesized_value_expression_primary())) {
             return visitNonparenthesized_value_expression_primary(ctx.nonparenthesized_value_expression_primary());
         } else {
             return visitBoolean_value_expression(ctx.parenthesized_boolean_value_expression().boolean_value_expression());
@@ -1275,7 +1294,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
 
     @Override
     public Expr visitRow_value_predicand(SQLParser.Row_value_predicandContext ctx) {
-        if (checkIfExist(ctx.row_value_special_case())) {
+        if (Objects.nonNull(ctx.row_value_special_case())) {
             return visitRow_value_special_case(ctx.row_value_special_case());
         } else {
             return visitRow_value_constructor_predicand(ctx.row_value_constructor_predicand());
@@ -1284,7 +1303,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
 
     @Override
     public Expr visitRow_value_constructor_predicand(SQLParser.Row_value_constructor_predicandContext ctx) {
-        if (checkIfExist(ctx.boolean_predicand())) {
+        if (Objects.nonNull(ctx.boolean_predicand())) {
             return visitBoolean_predicand(ctx.boolean_predicand());
         } else {
             return visitCommon_value_expression(ctx.common_value_expression());
@@ -1344,7 +1363,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
     @Override
     public Expr visitFactor(SQLParser.FactorContext ctx) {
         Expr current = visitNumeric_primary(ctx.numeric_primary());
-        if (checkIfExist(ctx.sign()) && checkIfExist(ctx.sign().MINUS())) {
+        if (Objects.nonNull(ctx.sign()) && Objects.nonNull(ctx.sign().MINUS())) {
             current = new SignedExpr(true, current);
         }
         return current;
@@ -1353,12 +1372,12 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
     @Override
     public Expr visitNumeric_primary(SQLParser.Numeric_primaryContext ctx) {
         Expr current = null;
-        if (checkIfExist(ctx.value_expression_primary())) {
+        if (Objects.nonNull(ctx.value_expression_primary())) {
             current = visitValue_expression_primary(ctx.value_expression_primary());
             for (int i = 0; i < ctx.CAST_EXPRESSION().size(); i++) {
                 current = new CastExpr(current, visitData_type(ctx.cast_target(i).data_type()));
             }
-        } else if (checkIfExist(ctx.numeric_value_function())) {
+        } else if (Objects.nonNull(ctx.numeric_value_function())) {
             current = visitNumeric_value_function(ctx.numeric_value_function());
         }
 
@@ -1398,7 +1417,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
         
         InPredicate predicate;
         
-        if (checkIfExist(ctx.row_value_predicand_list())) {
+        if (Objects.nonNull(ctx.row_value_predicand_list())) {
             RowPredicandList predicandsList = new RowPredicandList();
             predicandsList.setPredicands(buildRowValuePredicands(ctx.row_value_predicand_list()));
             predicate = new InPredicate(predicandsList,
@@ -1413,7 +1432,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
     
     @Override
     public Expr visitIn_predicate_value(SQLParser.In_predicate_valueContext ctx) {
-        if (checkIfExist(ctx.in_value_list())) {
+        if (Objects.nonNull(ctx.in_value_list())) {
             int size = ctx.in_value_list().row_value_predicand().size();
             Expr[] exprs = new Expr[size];
             for (int i = 0; i < size; i++) {
@@ -1429,7 +1448,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
     public Expr visitQuantified_comparison_predicate(Quantified_comparison_predicateContext ctx) {
         QuantifiedComparisonPredicate predicate;
         
-        if (checkIfExist(ctx.quantifier())) {
+        if (Objects.nonNull(ctx.quantifier())) {
             predicate = new QuantifiedComparisonPredicate(visitCommon_value_expression(ctx.common_value_expression()),
                     visitTable_subquery(ctx.table_subquery()), ctx.comp_op().getText(), ctx.quantifier().getText());
         } else {
@@ -1460,29 +1479,29 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
         Expr predicand = visitChildren(ctx.f);
         Expr pattern = visitChildren(ctx.s);
 
-        if (checkIfExist(ctx.pattern_matcher().negativable_matcher())) {
+        if (Objects.nonNull(ctx.pattern_matcher().negativable_matcher())) {
             boolean not = ctx.pattern_matcher().NOT() != null;
             Negativable_matcherContext matcher = ctx.pattern_matcher().negativable_matcher();
-            if (checkIfExist(matcher.LIKE())) {
+            if (Objects.nonNull(matcher.LIKE())) {
                 return new PatternMatchPredicate(MatchType.LikePredicate, not, predicand, pattern);
-            } else if (checkIfExist(matcher.ILIKE())) {
+            } else if (Objects.nonNull(matcher.ILIKE())) {
                 return new PatternMatchPredicate(MatchType.LikePredicate, not, predicand, pattern, true);
-            } else if (checkIfExist(matcher.SIMILAR())) {
+            } else if (Objects.nonNull(matcher.SIMILAR())) {
                 return new PatternMatchPredicate(MatchType.SimilarToPredicate, not, predicand, pattern);
-            } else if (checkIfExist(matcher.REGEXP()) || checkIfExist(matcher.RLIKE())) {
+            } else if (Objects.nonNull(matcher.REGEXP()) || Objects.nonNull(matcher.RLIKE())) {
                 return new PatternMatchPredicate(MatchType.Regexp, not, predicand, pattern);
             } else {
                 throw new SQLSyntaxError("Unsupported predicate: " + matcher.getText());
             }
-        } else if (checkIfExist(ctx.pattern_matcher().regex_matcher())) {
+        } else if (Objects.nonNull(ctx.pattern_matcher().regex_matcher())) {
             Regex_matcherContext matcher = ctx.pattern_matcher().regex_matcher();
-            if (checkIfExist(matcher.Similar_To())) {
+            if (Objects.nonNull(matcher.Similar_To())) {
                 return new PatternMatchPredicate(MatchType.Regexp, false, predicand, pattern, false);
-            } else if (checkIfExist(matcher.Not_Similar_To())) {
+            } else if (Objects.nonNull(matcher.Not_Similar_To())) {
                 return new PatternMatchPredicate(MatchType.Regexp, true, predicand, pattern, false);
-            } else if (checkIfExist(matcher.Similar_To_Case_Insensitive())) {
+            } else if (Objects.nonNull(matcher.Similar_To_Case_Insensitive())) {
                 return new PatternMatchPredicate(MatchType.Regexp, false, predicand, pattern, true);
-            } else if (checkIfExist(matcher.Not_Similar_To_Case_Insensitive())) {
+            } else if (Objects.nonNull(matcher.Not_Similar_To_Case_Insensitive())) {
                 return new PatternMatchPredicate(MatchType.Regexp, true, predicand, pattern, true);
             } else {
                 throw new SQLSyntaxError("Unsupported predicate: " + matcher.getText());
@@ -1510,7 +1529,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
     @Override
     public ColumnReferenceExpr visitColumn_reference(SQLParser.Column_referenceContext ctx) {
         ColumnReferenceExpr column = new ColumnReferenceExpr(ctx.name.getText());
-        if (checkIfExist(ctx.db_name)) {
+        if (Objects.nonNull(ctx.db_name)) {
             column.setQualifier(CatalogUtil.buildFQName(ctx.db_name.getText(), ctx.tb_name.getText()));
         } else if (ctx.tb_name != null) {
             column.setQualifier(ctx.tb_name.getText());
@@ -1545,7 +1564,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
     @Override
     public GeneralSetFunctionExpr visitGeneral_set_function(SQLParser.General_set_functionContext ctx) {
         String signature = ctx.set_function_type().getText();
-        boolean distinct = checkIfExist(ctx.set_qualifier()) && checkIfExist(ctx.set_qualifier().DISTINCT());
+        boolean distinct = Objects.nonNull(ctx.set_qualifier()) && Objects.nonNull(ctx.set_qualifier().DISTINCT());
         Expr param = visitValue_expression(ctx.value_expression());
 
         return new GeneralSetFunctionExpr(signature, distinct, new Expr[]{param});
@@ -1580,7 +1599,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
             target.setAlias(((ColumnReferenceExpr) target.getChild()).getName());      
         }
  
-        if (checkIfExist(ctx.annotation())) {
+        if (Objects.nonNull(ctx.annotation())) {
             Collection<Annotation> annotations = getAnnotations(ctx.annotation());
             target.setAnnotations(annotations);            
         }   
@@ -1614,7 +1633,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
             i++; // skip '||' operator
             right = visitCharacter_factor((Character_factorContext) ctx.getChild(i));
 
-            if (left.getType() == OpType.Literal && right.getType() == OpType.Literal) {
+            if (left instanceof LiteralValue && right instanceof LiteralValue) {
                 current = new LiteralValue(((LiteralValue) left).getValue() + ((LiteralValue) right).getValue(),
                         LiteralType.String);
             } else {
@@ -1627,7 +1646,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
 
     @Override
     public Expr visitNumeric_value_function(Numeric_value_functionContext ctx) {
-        if (checkIfExist(ctx.extract_expression())) {
+        if (Objects.nonNull(ctx.extract_expression())) {
             return visitExtract_expression(ctx.extract_expression());
         }
 
@@ -1638,9 +1657,9 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
     public Expr visitExtract_expression(Extract_expressionContext ctx) {
         Expr extractTarget = new LiteralValue(ctx.extract_field_string.getText(), LiteralType.String);
         Expr extractSource = visitDatetime_value_expression(ctx.extract_source().datetime_value_expression());
-//    if (checkIfExist(ctx.extract_source().column_reference())) {
+//    if (Objects.nonNull(ctx.extract_source().column_reference())) {
 //      extractSource = visitColumn_reference(ctx.extract_source().column_reference());
-//    } else if (checkIfExist(ctx.extract_source().datetime_literal())) {
+//    } else if (Objects.nonNull(ctx.extract_source().datetime_literal())) {
 //      extractSource = visitDatetime_literal(ctx.extract_source().datetime_literal());
 //    } else {
 //      return null;
@@ -1656,12 +1675,12 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
     public Expr visitTrim_function(SQLParser.Trim_functionContext ctx) {
         Expr trimSource = visitChildren(ctx.trim_operands().trim_source);
         String functionName = "trim";
-        if (checkIfExist(ctx.trim_operands().FROM())) {
-            if (checkIfExist(ctx.trim_operands().trim_specification())) {
+        if (Objects.nonNull(ctx.trim_operands().FROM())) {
+            if (Objects.nonNull(ctx.trim_operands().trim_specification())) {
                 Trim_specificationContext specification = ctx.trim_operands().trim_specification();
-                if (checkIfExist(specification.LEADING())) {
+                if (Objects.nonNull(specification.LEADING())) {
                     functionName = "ltrim";
-                } else if (checkIfExist(specification.TRAILING())) {
+                } else if (Objects.nonNull(specification.TRAILING())) {
                     functionName = "rtrim";
                 } else {
                     functionName = "trim";
@@ -1670,7 +1689,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
         }
 
         Expr trimCharacters = null;
-        if (checkIfExist(ctx.trim_operands().trim_character)) {
+        if (Objects.nonNull(ctx.trim_operands().trim_character)) {
             trimCharacters = visitCharacter_value_expression(ctx.trim_operands().trim_character);
         }
 
@@ -1686,82 +1705,82 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
 
     @Override
     public Expr visitDatabase_definition(SQLParser.Database_definitionContext ctx) {
-        return new CreateDatabase(ctx.identifier().getText(), null, checkIfExist(ctx.if_not_exists()));
+        return new CreateDatabase(ctx.identifier().getText(), null, Objects.nonNull(ctx.if_not_exists()));
     }
 
     @Override
     public Expr visitDrop_database_statement(SQLParser.Drop_database_statementContext ctx) {
-        return new DropDatabase(ctx.identifier().getText(), checkIfExist(ctx.if_exists()));
+        return new DropDatabase(ctx.identifier().getText(), Objects.nonNull(ctx.if_exists()));
     }
         
     @Override
     public Expr visitCreate_table_statement(SQLParser.Create_table_statementContext ctx) {
         
         String tableName = ctx.table_name(0).getText();
-        CreateTable createTable = new CreateTable(tableName, checkIfExist(ctx.if_not_exists()));
+        CreateTable createTable = new CreateTable(tableName, Objects.nonNull(ctx.if_not_exists()));
         
-        createTable.setReplace(checkIfExist(ctx.or_replace()));
+        createTable.setReplace(Objects.nonNull(ctx.or_replace()));
         
-        if (checkIfExist(ctx.LIKE())) {
+        if (Objects.nonNull(ctx.LIKE())) {
             createTable.setLikeParentTable(ctx.like_table_name.getText());
             return createTable;
         }
 
-        if (checkIfExist(ctx.file_alias())) {
+        if (Objects.nonNull(ctx.file_alias())) {
             createTable.setAlias(ctx.file_alias().Regular_Identifier().getText());
         }
         
-        if (checkIfExist(ctx.annotation())) {
+        if (Objects.nonNull(ctx.annotation())) {
             Collection<Annotation> annotations = getAnnotations(ctx.annotation());
             createTable.setAnnotations(annotations);            
         }          
 
-        if (checkIfExist(ctx.file_resource_name())) {
+        if (Objects.nonNull(ctx.file_resource_name())) {
             File_resource_nameContext fileResCtx = ctx.file_resource_name();
-            if (checkIfExist(fileResCtx.Character_String_Literal())) {
+            if (Objects.nonNull(fileResCtx.Character_String_Literal())) {
                 createTable.setResourceName(stripQuote(ctx.file_resource_name().Character_String_Literal().getText()));
-            } else if (checkIfExist(fileResCtx.odi_variable_literal())) {
+            } else if (Objects.nonNull(fileResCtx.odi_variable_literal())) {
                 createTable.setResourceName(stripQuote(fileResCtx.odi_variable_literal().getText()));
             }
         }
         
-        if (checkIfExist(ctx.file_description())) {
+        if (Objects.nonNull(ctx.file_description())) {
             createTable.setDescription(stripQuote(ctx.file_description().Character_String_Literal().getText()));
         }
         
-        if (checkIfExist(ctx.olap_type())) {
+        if (Objects.nonNull(ctx.olap_type())) {
             createTable.setOlapType(stripQuote(ctx.olap_type().otype.getText()));
         }
 
-        if (checkIfExist(ctx.file_descriptor())) {
+        if (Objects.nonNull(ctx.file_descriptor())) {
             File_descriptorContext fileCtx = ctx.file_descriptor();
             CreateTable.FileDescriptor fDesc = new FileDescriptor();
 
-            if (checkIfExist(fileCtx.file_format())) {
-                if (checkIfExist(fileCtx.file_format().DELIMITED())) {
+            if (Objects.nonNull(fileCtx.file_format())) {
+                if (Objects.nonNull(fileCtx.file_format().DELIMITED())) {
                     fDesc.setFormat(FileDescriptor.FileFormat.DELIMITED);
-                } else if (checkIfExist(fileCtx.file_format().FIXED())) {
+                } else if (Objects.nonNull(fileCtx.file_format().FIXED())) {
                     fDesc.setFormat(FileDescriptor.FileFormat.FIXED);
                 }
             }
 
-            if (checkIfExist(fileCtx.file_heading())) {
+            if (Objects.nonNull(fileCtx.file_heading())) {
                 fDesc.setSkipHeadingLines(Integer.valueOf(fileCtx.file_heading().NUMBER().getText()));
             }
 
-            if (checkIfExist(fileCtx.record_separator())) {
+            if (Objects.nonNull(fileCtx.record_separator())) {
                 fDesc.setRecordSeparator(stripQuote(fileCtx.record_separator().Character_String_Literal().getText()));
             }
 
-            if (checkIfExist(fileCtx.field_separator())) {
+            if (Objects.nonNull(fileCtx.field_separator())) {
                 fDesc.setFieldSeparator(stripQuote(fileCtx.field_separator().Character_String_Literal().getText()));
             }
 
-            if (checkIfExist(fileCtx.text_delimiter())) {
+            if (Objects.nonNull(fileCtx.text_delimiter())) {
                 String textDelim = stripQuote(fileCtx.text_delimiter().Character_String_Literal().getText());
                 if (textDelim.contains("\\u")) {                    
                     try {
-                        String replaced = org.apache.commons.lang.StringUtils.replace(textDelim, "\\u00", "");
+                        String replaced = org.apache.commons.lang3.StringUtils.replace(textDelim, "\\u00", "");
                         byte[] bytes = Hex.decodeHex(replaced.toCharArray());
                         textDelim = new String(bytes, "UTF-8");
                     } catch (DecoderException | UnsupportedEncodingException ex) {
@@ -1771,14 +1790,14 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
                 fDesc.setTextDelimiter(textDelim);
             }
 
-            if (checkIfExist(fileCtx.decimal_separator())) {
+            if (Objects.nonNull(fileCtx.decimal_separator())) {
                 fDesc.setDecimalDelimiter(stripQuote(fileCtx.decimal_separator().Character_String_Literal().getText()));
             }
 
             createTable.setFileDescriptor(fDesc);
         }
 
-        if (checkIfExist(ctx.table_elements())) {
+        if (Objects.nonNull(ctx.table_elements())) {
             ColumnDefinition[] elements = getDefinitions(ctx.table_elements());
             Collection<ITableConstraint> keys = getTableKeys(ctx.table_elements());
             Collection<TableKey> indexes = getTableIndexes(ctx.table_elements());
@@ -1790,27 +1809,27 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
             createTable.setTableKeys(allCons);
         }
 
-        if (checkIfExist(ctx.USING())) {
+        if (Objects.nonNull(ctx.USING())) {
             String fileType = ctx.storage_type.getText();
             createTable.setStorageType(fileType);
         }
 
-        if (checkIfExist(ctx.query_expression())) {
+        if (Objects.nonNull(ctx.query_expression())) {
             Expr subquery = visitQuery_expression(ctx.query_expression());
             createTable.setSubQuery(subquery);
         }
 
-        if (checkIfExist(ctx.insert_statement())) {
+        if (Objects.nonNull(ctx.insert_statement())) {
             Expr insert = this.visitInsert_statement(ctx.insert_statement());
             createTable.setSubQuery(insert);
         }
 
-        if (checkIfExist(ctx.param_clause())) {
+        if (Objects.nonNull(ctx.param_clause())) {
             Map<String, String> params = escapeTableMeta(getParams(ctx.param_clause()));
             createTable.setParams(params);
         }
 
-        if (checkIfExist(ctx.table_partitioning_clauses())) {
+        if (Objects.nonNull(ctx.table_partitioning_clauses())) {
             PartitionMethodDescExpr partitionMethodDesc
                     = parseTablePartitioningClause(ctx.table_partitioning_clauses());
             createTable.setPartitionMethod(partitionMethodDesc);
@@ -1821,9 +1840,9 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
     @Override
     public Expr visitCreate_mapping_statement(SQLParser.Create_mapping_statementContext ctx) {
 
-        if (checkIfExist(ctx.create_simple_mapping())) {
+        if (Objects.nonNull(ctx.create_simple_mapping())) {
             return visitCreate_simple_mapping(ctx.create_simple_mapping());
-        } else if (checkIfExist(ctx.create_complex_mapping())) {
+        } else if (Objects.nonNull(ctx.create_complex_mapping())) {
             return visitCreate_complex_mapping(ctx.create_complex_mapping());
         } else {
             return null;
@@ -1841,18 +1860,18 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
     }
 
     protected Collection<ITableConstraint> getTableKeys(SQLParser.Table_elementsContext ctx) {
-        return ctx.field_element().stream().filter(e -> checkIfExist(e.datastore_constraint()))
+        return ctx.field_element().stream().filter(e -> Objects.nonNull(e.datastore_constraint()))
                 .map(e -> getDatastoreConstraint(e.datastore_constraint())).collect(Collectors.toList());
     }
     
     protected Collection<TableKey> getTableIndexes(SQLParser.Table_elementsContext ctx) {
-        return ctx.field_element().stream().filter(e -> checkIfExist(e.index_inline()))
+        return ctx.field_element().stream().filter(e -> Objects.nonNull(e.index_inline()))
                 .map(e -> getInlineIndex(e.index_inline())).collect(Collectors.toList());        
     }
     
     protected ColumnDefinition[] getDefinitions(SQLParser.Table_elementsContext ctx) {
         
-        List<ColumnDefinition> colList = ctx.field_element().stream().filter(e -> (!checkIfExist(e.datastore_constraint()) && !checkIfExist(e.index_inline())))
+        List<ColumnDefinition> colList = ctx.field_element().stream().filter(e -> (!Objects.nonNull(e.datastore_constraint()) && !Objects.nonNull(e.index_inline())))
                 .map(this::getDatastoreColumndefinition).collect(Collectors.toList());
         
         return colList.toArray(ColumnDefinition[]::new);
@@ -1894,12 +1913,12 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
             col.setPhysLength(Integer.valueOf(field_ctx.field_phys_length().NUMBER().getText()));
         }
         
-        if (checkIfExist(field_ctx.annotation())) {
+        if (Objects.nonNull(field_ctx.annotation())) {
             Collection<Annotation> annotations = getAnnotations(field_ctx.annotation());
             col.setAnnotations(annotations);            
         }   
         
-        if (checkIfExist(field_ctx.field_comment())) {
+        if (Objects.nonNull(field_ctx.field_comment())) {
             col.setDescription(stripQuote(field_ctx.field_comment().comm.getText())); 
         }
         return col;
@@ -1942,7 +1961,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
            col.setPhysLength(Integer.valueOf(field_ctx.field_phys_length().NUMBER().getText()));
         }
         
-        if (checkIfExist(field_ctx.field_comment())) {
+        if (Objects.nonNull(field_ctx.field_comment())) {
             col.setDescription(stripQuote(field_ctx.field_comment().comm.getText())); 
         }
 
@@ -1992,7 +2011,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
            col.setPhysLength(Integer.valueOf(field_ctx.field_phys_length().NUMBER().getText()));
         }
         
-        if (checkIfExist(field_ctx.field_comment())) {
+        if (Objects.nonNull(field_ctx.field_comment())) {
             col.setDescription(stripQuote(field_ctx.field_comment().comm.getText())); 
         } 
 
@@ -2001,7 +2020,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
 
     public PartitionMethodDescExpr parseTablePartitioningClause(SQLParser.Table_partitioning_clausesContext ctx) {
 
-        if (checkIfExist(ctx.range_partitions())) { // For Range Partition
+        if (Objects.nonNull(ctx.range_partitions())) { // For Range Partition
             Range_partitionsContext rangePartitionsContext = ctx.range_partitions();
             List<Range_value_clauseContext> rangeValueClause = rangePartitionsContext.
                     range_value_clause_list().range_value_clause();
@@ -2009,7 +2028,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
             List<RangePartitionSpecifier> specifiers = Lists.newArrayList();
 
             rangeValueClause.forEach((rangeValue) -> {
-                if (checkIfExist(rangeValue.MAXVALUE())) { // LESS THAN (MAXVALUE)
+                if (Objects.nonNull(rangeValue.MAXVALUE())) { // LESS THAN (MAXVALUE)
                     specifiers.add(new RangePartitionSpecifier(rangeValue.partition_name().getText()));
                 } else { // LESS THAN (expr)
                     specifiers.add(new RangePartitionSpecifier(rangeValue.partition_name().getText(),
@@ -2019,10 +2038,10 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
             return new CreateTable.RangePartition(buildColumnReferenceList(ctx.range_partitions().column_reference_list()),
                     specifiers);
 
-        } else if (checkIfExist(ctx.hash_partitions())) { // For Hash Partition
+        } else if (Objects.nonNull(ctx.hash_partitions())) { // For Hash Partition
             Hash_partitionsContext hashPartitions = ctx.hash_partitions();
 
-            if (checkIfExist(hashPartitions.hash_partitions_by_quantity())) { // PARTITIONS (num)
+            if (Objects.nonNull(hashPartitions.hash_partitions_by_quantity())) { // PARTITIONS (num)
                 return new HashPartition(buildColumnReferenceList(hashPartitions.column_reference_list()),
                         visitNumeric_value_expression(hashPartitions.hash_partitions_by_quantity().quantity));
 
@@ -2032,7 +2051,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
                 return new HashPartition(buildColumnReferenceList(hashPartitions.column_reference_list()), specifiers);
             }
 
-        } else if (checkIfExist(ctx.list_partitions())) { // For List Partition
+        } else if (Objects.nonNull(ctx.list_partitions())) { // For List Partition
             List_partitionsContext listPartitions = ctx.list_partitions();
             List<List_value_partitionContext> partitions = listPartitions.list_value_clause_list().list_value_partition();
             List<ListPartitionSpecifier> specifiers = Lists.newArrayList();
@@ -2048,12 +2067,12 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
             });
             return new ListPartition(buildColumnReferenceList(ctx.list_partitions().column_reference_list()), specifiers);
 
-        } else if (checkIfExist(ctx.column_partitions())) { // For Column Partition (Hive Style)
+        } else if (Objects.nonNull(ctx.column_partitions())) { // For Column Partition (Hive Style)
             return new CreateTable.ColumnPartition(getDefinitions(ctx.column_partitions().table_elements()));
         } else {
             throw new SQLSyntaxError("Invalid Partition Type: " + ctx.toStringTree());
         }
-        
+
     }
 
     @SuppressWarnings("null")
@@ -2061,18 +2080,18 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
     public DataTypeExpr visitData_type(SQLParser.Data_typeContext ctx) {
         DataTypeExpr typeDefinition = null;
 
-        if (checkIfExist(ctx.generic_type())) {
+        if (Objects.nonNull(ctx.generic_type())) {
             SQLParser.Generic_typeContext generic_type = ctx.generic_type();
             String dataType;
             
-            if (checkIfExist(generic_type.Regular_Identifier())) {
+            if (Objects.nonNull(generic_type.Regular_Identifier())) {
                 dataType = generic_type.Regular_Identifier().getText();
             } else {
                 dataType = generic_type.Quoted_Identifier().getText();
             }
             typeDefinition = new DataTypeExpr(dataType);
 
-            if (checkIfExist(generic_type.precision_param())) {
+            if (Objects.nonNull(generic_type.precision_param())) {
                 SQLParser.Precision_paramContext precision_ctx = generic_type.precision_param();
                 if (precision_ctx.precision != null) {
                     String precisionOrLength = generic_type.precision_param().precision.getText();
@@ -2294,7 +2313,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
                 List<TargetColumn> targetColumns = TUtil.newList();
                 ctx.column_name_list().target_column().stream().map((targColCtx) -> {
                     TargetColumn targCol = new TargetColumn(targColCtx.identifier().getText());
-                    if (checkIfExist(targColCtx.annotation())) {
+                    if (Objects.nonNull(targColCtx.annotation())) {
                         Collection<Annotation> annotations = getAnnotations(targColCtx.annotation());                        
                         targCol.setAnnotations(annotations);
                     }
@@ -2305,7 +2324,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
             }
         }
         
-        if (checkIfExist(ctx.alias)) {
+        if (Objects.nonNull(ctx.alias)) {
             insertExpr.setTableAlias(ctx.alias.getText());            
         }
 
@@ -2321,21 +2340,21 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
             }
         }
         
-        if (checkIfExist(ctx.integration_params())) {
+        if (Objects.nonNull(ctx.integration_params())) {
             Integration_paramsContext intctx = ctx.integration_params();
-            if (checkIfExist(intctx.INTEGRATION_TYPE())) {
+            if (Objects.nonNull(intctx.INTEGRATION_TYPE())) {
                  insertExpr.setIntegrationType(stripQuote(intctx.integration_type.getText()));
             }
-            if(checkIfExist(intctx.UPDATE_KEY())) {
+            if(Objects.nonNull(intctx.UPDATE_KEY())) {
                 insertExpr.setUpdateKey(intctx.key.getText().toUpperCase());
             }                        
-            if (checkIfExist(intctx.REJECT())) {
+            if (Objects.nonNull(intctx.REJECT())) {
                 insertExpr.setRejectLimit(Integer.valueOf(intctx.max_rejected.getText()));
                 insertExpr.setRejectLimitUnit(intctx.rejected_unit.getText().toUpperCase());
             }            
         }
         
-        if (checkIfExist(ctx.annotation())) {
+        if (Objects.nonNull(ctx.annotation())) {
             Collection<Annotation> annotations = getAnnotations(ctx.annotation());
             insertExpr.setAnnotations(annotations);            
         }
@@ -2354,23 +2373,23 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
         MultiInsert insert = new MultiInsert();
         int targetsSize = 0;
 
-        if (checkIfExist(ctx.multi_insert_target())) {
+        if (Objects.nonNull(ctx.multi_insert_target())) {
             targetsSize = ctx.multi_insert_target().size();
         }
-        if (checkIfExist(ctx.multi_insert_def_target())) {
+        if (Objects.nonNull(ctx.multi_insert_def_target())) {
             targetsSize++;
         }
 
         if (targetsSize > 0) {
             MultiInsertTarget[] targets = new MultiInsertTarget[targetsSize];
 
-            if (checkIfExist(ctx.multi_insert_target())) {
+            if (Objects.nonNull(ctx.multi_insert_target())) {
                 for (int i = 0; i < ctx.multi_insert_target().size(); i++) {
                     targets[i] = visitMulti_insert_target(ctx.multi_insert_target(i));
                 }
             }
 
-            if (checkIfExist(ctx.multi_insert_def_target())) {
+            if (Objects.nonNull(ctx.multi_insert_def_target())) {
                 targets[targetsSize - 1] = visitMulti_insert_def_target(ctx.multi_insert_def_target());
             }
 
@@ -2379,7 +2398,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
 
         insert.setSubQuery(visitQuery_expression(ctx.query_expression()));
 
-        if (checkIfExist(ctx.annotation())) {
+        if (Objects.nonNull(ctx.annotation())) {
             Collection<Annotation> annotations = getAnnotations(ctx.annotation());
             insert.setAnnotations(annotations);            
         }
@@ -2390,10 +2409,9 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
 
     @Override
     public Expr visitDrop_table_statement(SQLParser.Drop_table_statementContext ctx) {
-        return new DropTable(ctx.table_name().getText(), checkIfExist(ctx.if_exists()), checkIfExist(ctx.PURGE()));
+        return new DropTable(ctx.table_name().getText(), Objects.nonNull(ctx.if_exists()), Objects.nonNull(ctx.PURGE()));
     }
 
-    
     protected Map<String, String> getParams(SQLParser.Param_clauseContext ctx) {
         Map<String, String> params = new HashMap<>();
         for (int i = 0; i < ctx.param().size(); i++) {
@@ -2440,7 +2458,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
         argsList.add(visitCast_target(ctx.cast_target()));
         argsList.add(visitCast_operand(ctx.cast_operand()));
         
-        if (checkIfExist(ctx.NUMBER())) {
+        if (Objects.nonNull(ctx.NUMBER())) {
             argsList.add(new LiteralValue(ctx.NUMBER().getText(), LiteralType.Unsigned_Integer));
         }
                 
@@ -2456,7 +2474,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
 
     @Override
     public Expr visitUnsigned_literal(SQLParser.Unsigned_literalContext ctx) {
-        if (checkIfExist(ctx.unsigned_numeric_literal())) {
+        if (Objects.nonNull(ctx.unsigned_numeric_literal())) {
             return visitUnsigned_numeric_literal(ctx.unsigned_numeric_literal());
         } else {
             return visitGeneral_literal(ctx.general_literal());
@@ -2465,13 +2483,13 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
 
     @Override
     public Expr visitGeneral_literal(SQLParser.General_literalContext ctx) {
-        if (checkIfExist(ctx.Character_String_Literal())) {
+        if (Objects.nonNull(ctx.Character_String_Literal())) {
             return new LiteralValue(stripQuote(ctx.Character_String_Literal().getText()), LiteralType.String);
-        } else if (checkIfExist(ctx.datetime_literal())) {
+        } else if (Objects.nonNull(ctx.datetime_literal())) {
             return visitDatetime_literal(ctx.datetime_literal());
-        } else if (checkIfExist(ctx.boolean_literal())) {
-            return new BooleanLiteral(checkIfExist(ctx.boolean_literal().TRUE()));
-        } else if (checkIfExist(ctx.odi_variable_literal())) {
+        } else if (Objects.nonNull(ctx.boolean_literal())) {
+            return new BooleanLiteral(Objects.nonNull(ctx.boolean_literal().TRUE()));
+        } else if (Objects.nonNull(ctx.odi_variable_literal())) {
             return visitOdi_variable_literal(ctx.odi_variable_literal());
         } else {
             return null;
@@ -2480,11 +2498,11 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
 
     @Override
     public Expr visitDatetime_literal(SQLParser.Datetime_literalContext ctx) {
-        if (checkIfExist(ctx.time_literal())) {
+        if (Objects.nonNull(ctx.time_literal())) {
             return visitTime_literal(ctx.time_literal());
-        } else if (checkIfExist(ctx.date_literal())) {
+        } else if (Objects.nonNull(ctx.date_literal())) {
             return visitDate_literal(ctx.date_literal());
-        } else if (checkIfExist(ctx.interval_literal())) {
+        } else if (Objects.nonNull(ctx.interval_literal())) {
             return visitInterval_literal(ctx.interval_literal());
         } else {
             return visitTimestamp_literal(ctx.timestamp_literal());
@@ -2535,7 +2553,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
 
     @Override
     public Expr visitDatetime_primary(SQLParser.Datetime_primaryContext ctx) {
-        if (checkIfExist(ctx.value_expression_primary())) {
+        if (Objects.nonNull(ctx.value_expression_primary())) {
             return visitValue_expression_primary(ctx.value_expression_primary());
         } else {
             return visitDatetime_value_function(ctx.datetime_value_function());
@@ -2544,9 +2562,9 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
 
     @Override
     public Expr visitDatetime_value_function(SQLParser.Datetime_value_functionContext ctx) {
-        if (checkIfExist(ctx.current_date_value_function())) {
+        if (Objects.nonNull(ctx.current_date_value_function())) {
             return visitCurrent_date_value_function(ctx.current_date_value_function());
-        } else if (checkIfExist(ctx.current_time_value_function())) {
+        } else if (Objects.nonNull(ctx.current_time_value_function())) {
             return visitCurrent_time_value_function(ctx.current_time_value_function());
         } else {
             return visitCurrent_timestamp_value_function(ctx.current_timestamp_value_function());
@@ -2612,43 +2630,51 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
 
         final List<Table_nameContext> tables = ctx.table_name();
 
-        final AlterTable alterTable = new AlterTable(tables.get(0).getText());
+        String tableName = tables.get(0).getText();
         
+        AlterTableOpType alterTableOpType;
+
+        String newTableName = null;
         if (tables.size() == 2) {
-            alterTable.setNewTableName(tables.get(1).getText());
+            newTableName = tables.get(1).getText();
         }
 
-        if (checkIfExist(ctx.column_name()) && ctx.column_name().size() == 2) {
-            final List<Column_nameContext> columns = ctx.column_name();
-            alterTable.setColumnName(columns.get(0).getText());
-            alterTable.setNewColumnName(columns.get(1).getText());
+        String columnName = null;
+        String newColumnName = null;
+        if (Objects.nonNull(ctx.column_name()) && ctx.column_name().size() == 2) {
+            List<Column_nameContext> columns = ctx.column_name();
+            columnName = columns.get(0).getText();
+            newColumnName = columns.get(1).getText();
         }
         
+        ColumnDefinition addNewColumn = null;
         Modify_field_elementContext mod_field_elementContext = ctx.modify_field_element();
-        if (checkIfExist(mod_field_elementContext)) {            
-            final ColumnDefinition columnDefinition = getModifyColumnDefinition(mod_field_elementContext);
-            alterTable.setAddNewColumn(columnDefinition);
+        if (Objects.nonNull(mod_field_elementContext)) {            
+            addNewColumn = getModifyColumnDefinition(mod_field_elementContext);
         }
         
         Field_elementContext add_field_elementContext = ctx.field_element();
-        if (checkIfExist(add_field_elementContext)) {            
-            final ColumnDefinition columnDefinition = getAddColumnDefinition(add_field_elementContext);
-            alterTable.setAddNewColumn(columnDefinition);
+        if (Objects.nonNull(add_field_elementContext)) {            
+            addNewColumn = getAddColumnDefinition(add_field_elementContext);
         }
-        
-        if (checkIfExist(ctx.datastore_constraint())) {             
-            ITableConstraint key = getDatastoreConstraint(ctx.datastore_constraint());
-            alterTable.setTableKey(key);
+
+        ITableConstraint tableKey = null;
+        if (Objects.nonNull(ctx.datastore_constraint())) {             
+            tableKey = getDatastoreConstraint(ctx.datastore_constraint());
         }
                 
-        alterTable.setAlterTableOpType(determineAlterTableType(ctx));
+        alterTableOpType = determineAlterTableType(ctx);
         
-        if (checkIfExist(ctx.comm)) {
-            alterTable.setComment(stripQuote(ctx.comm.getText()));
-            alterTable.setAlterTableOpType(AlterTableOpType.COMMENT);
+        String comment = null;
+        if (Objects.nonNull(ctx.comm)) {
+            comment = stripQuote(ctx.comm.getText());
+            alterTableOpType = AlterTableOpType.COMMENT;
         }        
 
-        return alterTable;
+        AlterTable.Model model = new AlterTable.Model(tableName, newTableName, columnName, newColumnName, 
+            addNewColumn, tableKey, comment, alterTableOpType);
+
+        return new AlterTable(model);
     }
     
     protected ITableConstraint getDatastoreConstraint(Datastore_constraintContext ctx) {
@@ -2693,9 +2719,9 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
             String keyName = keyCtx.key_name.getText();
             TableConstraint constraint = new TableConstraint(keyName, scope, controlFlow, controlStatic, inDatabase, active, description);
             keyColumnNames = keyCtx.column_name_list().target_column().stream().map(c -> c.identifier().getText()).collect(Collectors.toList());
-            TableKey key = new TableKey(constraint, keyColumnNames, checkIfExist(keyCtx.PRIMARY_KEY()), checkIfExist(keyCtx.ALTERNATE_KEY()) && checkIfExist(keyCtx.UNIQUE()));
+            TableKey key = new TableKey(constraint, keyColumnNames, Objects.nonNull(keyCtx.PRIMARY_KEY()), Objects.nonNull(keyCtx.ALTERNATE_KEY()) && Objects.nonNull(keyCtx.UNIQUE()));
             
-            if (checkIfExist(ctx.annotation())) {
+            if (Objects.nonNull(ctx.annotation())) {
                 Collection<Annotation> annotations = getAnnotations(ctx.annotation());
                 key.setAnnotations(annotations);
             }
@@ -2721,7 +2747,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
         
         TableConstraint constraint = new TableConstraint(ctx.name.getText(), ConstraintScope.DATABASE, Boolean.FALSE, Boolean.FALSE, Boolean.FALSE, Boolean.FALSE, null);
         TableKey key = new TableKey(constraint, keyColumnNames, Boolean.FALSE, Objects.nonNull(ctx.UNIQUE()));
-        if (checkIfExist(ctx.annotation())) {
+        if (Objects.nonNull(ctx.annotation())) {
             Collection<Annotation> annotations = getAnnotations(ctx.annotation());
             key.setAnnotations(annotations);
         }
@@ -2792,19 +2818,19 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
         MultiInsertTarget target = new MultiInsertTarget();
         target.setDefaultcond(Boolean.FALSE);
 
-        if (checkIfExist(ctx.table_name())) {
+        if (Objects.nonNull(ctx.table_name())) {
             target.setTableName(ctx.table_name().getText());
         }
 
-        if (checkIfExist(ctx.alias)) {
+        if (Objects.nonNull(ctx.alias)) {
             target.setTableAlias(ctx.alias.getText());            
         }
         
-        if (checkIfExist(ctx.column_name_list())) {
+        if (Objects.nonNull(ctx.column_name_list())) {
             List<TargetColumn> targetColumns = TUtil.newList();
             ctx.column_name_list().target_column().stream().map((targColCtx) -> {
                 TargetColumn targCol = new TargetColumn(targColCtx.identifier().getText());
-                if (checkIfExist(targColCtx.annotation())) {
+                if (Objects.nonNull(targColCtx.annotation())) {
                     Collection<Annotation> annotations = getAnnotations(targColCtx.annotation());
                     targCol.setAnnotations(annotations);
                 }
@@ -2814,7 +2840,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
 
         }
 
-        if (checkIfExist(ctx.multi_insert_select_list())) {
+        if (Objects.nonNull(ctx.multi_insert_select_list())) {
             NamedExpr[] expressions = new NamedExpr[ctx.multi_insert_select_list().value_expression().size()];
             for (int i = 0; i < ctx.multi_insert_select_list().value_expression().size(); i++) {
                 expressions[i] = new NamedExpr(visitValue_expression(ctx.multi_insert_select_list().value_expression().get(i)));
@@ -2823,28 +2849,28 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
             target.setExpressions(expressions);
         }
 
-        if (checkIfExist(ctx.search_condition())) {
+        if (Objects.nonNull(ctx.search_condition())) {
             Selection selection = new Selection(visitSearch_condition(ctx.search_condition()));
             selection.setText(getRuleText(ctx.search_condition()));
 
             target.setCondition(selection);
         }
         
-        if (checkIfExist(ctx.integration_params())) {
+        if (Objects.nonNull(ctx.integration_params())) {
             Integration_paramsContext intctx = ctx.integration_params();
-            if (checkIfExist(intctx.INTEGRATION_TYPE())) {
+            if (Objects.nonNull(intctx.INTEGRATION_TYPE())) {
                  target.setIntegrationType(intctx.integration_type.getText());
             }
-            if(checkIfExist(intctx.UPDATE_KEY())) {
+            if(Objects.nonNull(intctx.UPDATE_KEY())) {
                 target.setUpdateKey(intctx.key.getText().toUpperCase());
             }                        
-            if (checkIfExist(intctx.REJECT())) {
+            if (Objects.nonNull(intctx.REJECT())) {
                 target.setRejectLimit(Integer.valueOf(intctx.max_rejected.getText()));
                 target.setRejectLimitUnit(intctx.rejected_unit.getText().toUpperCase());
             }            
         }
         
-        if (checkIfExist(ctx.annotation())) {
+        if (Objects.nonNull(ctx.annotation())) {
             Collection<Annotation> annotations = getAnnotations(ctx.annotation());
             target.setAnnotations(annotations);            
         }
@@ -2857,15 +2883,15 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
         MultiInsertTarget target = new MultiInsertTarget();
         target.setDefaultcond(Boolean.TRUE);
 
-        if (checkIfExist(ctx.table_name())) {
+        if (Objects.nonNull(ctx.table_name())) {
             target.setTableName(ctx.table_name().getText());
         }
 
-        if (checkIfExist(ctx.column_name_list())) {
+        if (Objects.nonNull(ctx.column_name_list())) {
             List<TargetColumn> targetColumns = TUtil.newList();
             ctx.column_name_list().target_column().stream().map((targColCtx) -> {
                 TargetColumn targCol = new TargetColumn(targColCtx.identifier().getText());
-                if (checkIfExist(targColCtx.annotation())) {
+                if (Objects.nonNull(targColCtx.annotation())) {
                     Collection<Annotation> annotations = getAnnotations(targColCtx.annotation());
                     targCol.setAnnotations(annotations);
                 }
@@ -2875,7 +2901,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
 
         }
 
-        if (checkIfExist(ctx.multi_insert_select_list())) {
+        if (Objects.nonNull(ctx.multi_insert_select_list())) {
             NamedExpr[] expressions = new NamedExpr[ctx.multi_insert_select_list().value_expression().size()];
             for (int i = 0; i < ctx.multi_insert_select_list().value_expression().size(); i++) {
                 expressions[i] = new NamedExpr(visitValue_expression(ctx.multi_insert_select_list().value_expression().get(i)));
@@ -2895,7 +2921,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
             ctx.annotation_element().forEach((SQLParser.Annotation_elementContext annoElmnt) -> 
                     parameters.put(
                             annoElmnt.identifier().getText().toUpperCase(), 
-                            (checkIfExist(annoElmnt.Quoted_Identifier())) ? annoElmnt.Quoted_Identifier().getText() : CatalogUtil.stripQuote(annoElmnt.Character_String_Literal().getText())
+                            (Objects.nonNull(annoElmnt.Quoted_Identifier())) ? annoElmnt.Quoted_Identifier().getText() : CatalogUtil.stripQuote(annoElmnt.Character_String_Literal().getText())
                     )
             );
             Annotation anno = new DefaultAnnotation(ctx.identifier().getText(), parameters);
