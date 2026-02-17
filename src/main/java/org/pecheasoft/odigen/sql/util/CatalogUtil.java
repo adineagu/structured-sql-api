@@ -325,7 +325,11 @@ public class CatalogUtil {
             String projectCode = StringUtils.substringBefore(name, CatalogConstants.IDENTIFIER_DELIMITER);
             String mappingName = StringUtils.substringAfterLast(name, CatalogConstants.IDENTIFIER_DELIMITER);
             
-            return org.apache.commons.lang3.StringUtils.removeEnd(org.apache.commons.lang3.StringUtils.removeStart(name, projectCode+CatalogConstants.IDENTIFIER_DELIMITER), CatalogConstants.IDENTIFIER_DELIMITER+mappingName).split(CatalogConstants.IDENTIFIER_DELIMITER_REGEXP);
+            String prefix = projectCode + CatalogConstants.IDENTIFIER_DELIMITER;
+            String suffix = CatalogConstants.IDENTIFIER_DELIMITER + mappingName;
+            String temp = name.startsWith(prefix) ? name.substring(prefix.length()) : name;
+            String result = temp.endsWith(suffix) ? temp.substring(0, temp.length() - suffix.length()) : temp;
+            return result.split(CatalogConstants.IDENTIFIER_DELIMITER_REGEXP);
         }
     }
 

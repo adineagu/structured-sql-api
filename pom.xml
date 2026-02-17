@@ -113,17 +113,17 @@
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-lang3</artifactId>
-            <version>3.17.0</version>
+            <version>3.20.0</version>
         </dependency>
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-text</artifactId>
-            <version>1.12.0</version>
+            <version>1.15.0</version>
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
-            <version>2.18.2</version>
+            <version>2.19.0</version>
             <type>jar</type>
         </dependency>
         <!-- https://mvnrepository.com/artifact/org.antlr/antlr4 -->
@@ -150,7 +150,7 @@
             <dependency>
                 <groupId>org.apache.commons</groupId>
                 <artifactId>commons-lang3</artifactId>
-                <version>3.17.0</version>
+                <version>3.20.0</version>
             </dependency>
             <dependency>
                 <groupId>com.google.errorprone</groupId>

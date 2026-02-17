@@ -1780,7 +1780,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
                 String textDelim = stripQuote(fileCtx.text_delimiter().Character_String_Literal().getText());
                 if (textDelim.contains("\\u")) {                    
                     try {
-                        String replaced = org.apache.commons.lang3.StringUtils.replace(textDelim, "\\u00", "");
+                        String replaced = textDelim.replace("\\u00", "");
                         byte[] bytes = Hex.decodeHex(replaced.toCharArray());
                         textDelim = new String(bytes, "UTF-8");
                     } catch (DecoderException | UnsupportedEncodingException ex) {

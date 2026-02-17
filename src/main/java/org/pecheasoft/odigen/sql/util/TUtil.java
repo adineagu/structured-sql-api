@@ -847,15 +847,15 @@ public class TUtil {
     }
     
     public static boolean isOdiSubstitutionCode(String text) {
-        boolean hasOdiStartTag = StringUtils.startsWith(text, "<%")
-                || StringUtils.startsWith(text, "<?")
-                || StringUtils.startsWith(text, "<$")
-                || StringUtils.startsWith(text, "<@");
+        boolean hasOdiStartTag = text.startsWith("<%")
+                || text.startsWith("<?")
+                || text.startsWith("<$")
+                || text.startsWith("<@");
         
-        boolean hasOdiEndTag = StringUtils.endsWith(text, "%>")
-                || StringUtils.endsWith(text, "?>")
-                || StringUtils.endsWith(text, "$>")
-                || StringUtils.endsWith(text, "@>");
+        boolean hasOdiEndTag = text.endsWith("%>")
+                || text.endsWith("?>")
+                || text.endsWith("$>")
+                || text.endsWith("@>");
         
         return hasOdiStartTag && hasOdiEndTag;
         

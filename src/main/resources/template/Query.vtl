@@ -1,0 +1,99 @@
+
+#macro (Query $query $layer $isMain)
+#foreach($qry in $query.DatasetList)
+$!qry.SetOperator
+$!qry.AnnotationsString
+SELECT #if ($qry.IsDistinct) DISTINCT #end
+#if($isMain)
+#get_Tech_Cols_Expr($layer)
+#end
+#foreach($selItem in $qry.SelectList)
+#if($foreach.count == 1 && $isMain == false)    #else    ,#end$selItem.Expression as $selItem.Alias
+#end
+FROM
+#foreach($from in $qry.FromList)
+#joinLeftItem($from)
+    #if("$!from.Name" != "")@properties(name="$!from.Name")#else$!from.Name#end
+    #if($from.JoinType) $from.JoinType#end #joinRightItem($from)
+#if($from.JoinExpression) ON $from.JoinExpression #end
+#end
+#if ("$!qry.WhereText" != "")
+WHERE
+#foreach($selItem in $qry.WhereList)
+#if($foreach.count != 1)AND #end$selItem
+#end
+#end
+#if ("$!qry.PivotText" != "")
+    $qry.PivotText
+#end
+#if ($qry.GroupByText)
+GROUP BY
+    $qry.GroupByText
+#end
+#if ($qry.HavingText)
+HAVING
+    $qry.HavingText
+#end
+#if ($qry.OrderByText)
+ORDER BY
+    $qry.OrderByText
+#end
+#end
+#end
+
+#macro (fromLeftItem $from ) 
+#joinLeftItem($from)
+    #if("$!from.Name" != "")@properties(name="$!from.Name")#else$!from.Name#end
+    $from.JoinType #joinRightItem($from)
+#if($from.JoinExpression) ON $from.JoinExpression #end
+#end
+
+#macro (fromRightItem $from ) 
+#joinLeftItem($from)
+    #if("$!from.Name" != "")@properties(name="$!from.Name")#else$!from.Name#end
+    $from.JoinType #joinRightItem($from)
+#if($from.JoinExpression) ON $from.JoinExpression #end
+#end
+
+#macro (joinLeftItem $from)
+#if($from.LeftTable)    $from.LeftTable.getPhysName($ctx) $from.LeftTable.Alias #end
+#if($from.LeftQuery)    (#Query($from.LeftQuery "" false)) $from.LeftQuery.Name #end
+#if($from.LeftJoin)    #fromLeftItem($from.LeftJoin) #end
+#end
+
+#macro (joinRightItem $from)
+#if($from.RightTable)    $from.RightTable.getPhysName($ctx) $from.RightTable.Alias #end
+#if($from.RightQuery)    (#Query($from.RightQuery "" false)) $from.RightQuery.Name #end
+#if($from.RightJoin)    #fromRightItem($from.RightJoin) #end
+#end
+
+#macro (Insert $insert)
+#if(!$insert.MultiInsertTargets || $insert.MultiInsertTargets.isEmpty())
+INSERT INTO $insert.Target.getPhysName($ctx) (
+#get_Tech_Cols($targetLayer)
+#foreach($column in $insert.Columns)   
+    ,$column.AnnotationsString $column.Name
+#end
+)
+#get_Integration_Params($insert)
+#else
+INSERT ALL
+#foreach($targ in $insert.MultiInsertTargets)
+#set($targetTableName=$targ.Target.Name)
+#set($targLayer = $targetTableName.substring(0, $targetTableName.indexOf('_')))
+WHEN ($targ.Condition) THEN INTO $targ.Target.getPhysName($ctx) $targ.Target.Alias (
+#get_Tech_Cols($targLayer)
+#foreach($selItem in $targ.SelectList)
+    ,$selItem.Alias
+#end
+)
+VALUES (
+#get_Tech_Cols_Expr($targLayer "noAlias")
+#foreach($selItem in $targ.SelectList)
+    ,$selItem.Expression.Text
+#end
+)
+#get_Integration_Params_MultiInsert($targ $insert)
+#end
+#end
+#end
