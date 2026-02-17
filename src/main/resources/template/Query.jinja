@@ -1,0 +1,109 @@
+{#
+Query template for Jinjava - Handles complex SELECT statements
+Jinjava is a Java implementation of Jinja2 template engine
+#}
+
+{# Main Query macro with recursion support #}
+{% macro Query(query, layer, isMain) %}
+{% for qry in query.DatasetList %}
+{{ qry.SetOperator | default("") }}
+{{ qry.AnnotationsString | default("") }}
+SELECT {% if qry.IsDistinct %} DISTINCT {% endif %}
+{% if isMain %}
+{{ get_Tech_Cols_Expr(layer) }}
+{% endif %}
+{% for selItem in qry.SelectList %}
+{% if loop.first and not isMain %}    {% else %}    ,{% endif %}{{ selItem.Expression }} as {{ selItem.Alias }}
+{% endfor %}
+FROM
+{% for from in qry.FromList %}
+{{ joinLeftItem(from) }}
+    {% if from.Name %}@properties(name="{{ from.Name }}"){% else %}{{ from.Name | default("") }}{% endif %}
+    {% if from.JoinType %} {{ from.JoinType }}{% endif %} {{ joinRightItem(from) }}
+{% if from.JoinExpression %} ON {{ from.JoinExpression }} {% endif %}
+{% endfor %}
+{% if qry.WhereText %}
+WHERE
+{% for selItem in qry.WhereList %}
+{% if not loop.first %}AND {% endif %}{{ selItem }}
+{% endfor %}
+{% endif %}
+{% if qry.PivotText %}
+    {{ qry.PivotText }}
+{% endif %}
+{% if qry.GroupByText %}
+GROUP BY
+    {{ qry.GroupByText }}
+{% endif %}
+{% if qry.HavingText %}
+HAVING
+    {{ qry.HavingText }}
+{% endif %}
+{% if qry.OrderByText %}
+ORDER BY
+    {{ qry.OrderByText }}
+{% endif %}
+{% endfor %}
+{% endmacro %}
+
+{# From left item macro #}
+{% macro fromLeftItem(from) %}
+{{ joinLeftItem(from) }}
+    {% if from.Name %}@properties(name="{{ from.Name }}"){% else %}{{ from.Name | default("") }}{% endif %}
+    {{ from.JoinType }} {{ joinRightItem(from) }}
+{% if from.JoinExpression %} ON {{ from.JoinExpression }} {% endif %}
+{% endmacro %}
+
+{# From right item macro #}
+{% macro fromRightItem(from) %}
+{{ joinLeftItem(from) }}
+    {% if from.Name %}@properties(name="{{ from.Name }}"){% else %}{{ from.Name | default("") }}{% endif %}
+    {{ from.JoinType }} {{ joinRightItem(from) }}
+{% if from.JoinExpression %} ON {{ from.JoinExpression }} {% endif %}
+{% endmacro %}
+
+{# Join left item macro #}
+{% macro joinLeftItem(from) %}
+{% if from.LeftTable %}    {{ from.LeftTable.getPhysName(ctx) }} {{ from.LeftTable.Alias }} {% endif %}
+{% if from.LeftQuery %}    ({{ Query(from.LeftQuery, "", false) }}) {{ from.LeftQuery.Name }} {% endif %}
+{% if from.LeftJoin %}    {{ fromLeftItem(from.LeftJoin) }} {% endif %}
+{% endmacro %}
+
+{# Join right item macro #}
+{% macro joinRightItem(from) %}
+{% if from.RightTable %}    {{ from.RightTable.getPhysName(ctx) }} {{ from.RightTable.Alias }} {% endif %}
+{% if from.RightQuery %}    ({{ Query(from.RightQuery, "", false) }}) {{ from.RightQuery.Name }} {% endif %}
+{% if from.RightJoin %}    {{ fromRightItem(from.RightJoin) }} {% endif %}
+{% endmacro %}
+
+{# Insert macro #}
+{% macro Insert(insert) %}
+{% if not insert.MultiInsertTargets or insert.MultiInsertTargets | length == 0 %}
+INSERT INTO {{ insert.Target.getPhysName(ctx) }} (
+{{ get_Tech_Cols(targetLayer) }}
+{% for column in insert.Columns %}   
+    ,{{ column.AnnotationsString }} {{ column.Name }}
+{% endfor %}
+)
+{{ get_Integration_Params(insert) }}
+{% else %}
+INSERT ALL
+{% for targ in insert.MultiInsertTargets %}
+{% set targetTableName = targ.Target.Name %}
+{% set targLayer = targetTableName[:targetTableName.index('_')] %}
+WHEN ({{ targ.Condition }}) THEN INTO {{ targ.Target.getPhysName(ctx) }} {{ targ.Target.Alias }} (
+{{ get_Tech_Cols(targLayer) }}
+{% for selItem in targ.SelectList %}
+    ,{{ selItem.Alias }}
+{% endfor %}
+)
+VALUES (
+{{ get_Tech_Cols_Expr(targLayer, "noAlias") }}
+{% for selItem in targ.SelectList %}
+    ,{{ selItem.Expression.Text }}
+{% endfor %}
+)
+{{ get_Integration_Params_MultiInsert(targ, insert) }}
+{% endfor %}
+{% endif %}
+{% endmacro %}

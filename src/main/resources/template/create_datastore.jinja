@@ -1,0 +1,21 @@
+{# Jinjava template for CREATE TABLE statement #}
+{# Assign technical datastore name #}
+{% set xtDatastoreName = "XT_" + datastore.Name + "_V" %}
+
+{# Generate CREATE TABLE statement #}
+CREATE TABLE {{ xtDatastoreName }} (
+    {# Technical columns would be added here via macros #}
+    {# Iterate through datastore attributes #}
+    {% for col in datastore.Attributes %}
+    {{ "," if not loop.first else "    " }}{{ col.Name }} {{ col.DDLDataType }}{% if col.IsMandatory %} NOT NULL{% endif %}
+    {% endfor %}
+);
+
+{# Example of conditional logic #}
+{% if datastore.hasIndexes %}
+-- Add indexes here
+{% endif %}
+
+{# Jinjava supports filters like Jinja2 #}
+-- Table: {{ xtDatastoreName | upper }}
+-- Columns: {{ datastore.Attributes | length }}

@@ -16,7 +16,9 @@ import org.pecheasoft.odigen.sql.parse.SQLStatementParser;
 import org.pecheasoft.odigen.sql.parse.algebra.Expr;
 import org.pecheasoft.odigen.template.ITemplate;
 import org.pecheasoft.odigen.template.ITemplateParameter;
-import org.pecheasoft.odigen.template.velocity.ApacheVelocityTemplateService;
+import org.pecheasoft.odigen.template.ITemplateService;
+import org.pecheasoft.odigen.template.TemplateEngineType;
+import org.pecheasoft.odigen.template.TemplateServiceFactory;
 import org.pecheasoft.odigen.template.velocity.TemplateEngineParameter;
 
 public class Main {
@@ -42,10 +44,35 @@ public class Main {
         struct = StructuredObjectBuilder.getStructuredObject(expr);
         main.writeToFile("target/02_create_table_ast.json", struct.toJson());
 
-        // apply a template to the structured AST and write the result to a file
+        // Apply a Velocity template to the structured AST and write the result to a file
+        logger.info("Evaluating template using Apache Velocity...");
         String templateBody = main.readStream(main.getFileFromResourceAsStream("template/create_datastore.vtl"));
-        String evalResult = main.evaluateTemplate("create_datastore", templateBody, struct);
-        main.writeToFile("target/02_create_datastore.sql", evalResult);
+        String evalResult = main.evaluateTemplate("create_datastore", templateBody, struct, TemplateEngineType.VELOCITY);
+        main.writeToFile("target/02_create_datastore_velocity.sql", evalResult);
+
+        // Apply a StringTemplate 4 template to the structured AST and write the result to a file
+        logger.info("Evaluating template using StringTemplate 4...");
+        String st4TemplateBody = main.readStream(main.getFileFromResourceAsStream("template/create_datastore.st"));
+        String st4EvalResult = main.evaluateTemplate("create_datastore", st4TemplateBody, struct, TemplateEngineType.STRING_TEMPLATE_4);
+        main.writeToFile("target/02_create_datastore_st4.sql", st4EvalResult);
+
+        // Apply a FreeMarker template to the structured AST and write the result to a file
+        logger.info("Evaluating template using FreeMarker...");
+        String fmTemplateBody = main.readStream(main.getFileFromResourceAsStream("template/create_datastore.ftl"));
+        String fmEvalResult = main.evaluateTemplate("create_datastore", fmTemplateBody, struct, TemplateEngineType.FREEMARKER);
+        main.writeToFile("target/02_create_datastore_freemarker.sql", fmEvalResult);
+
+        // Apply a JTE template to the structured AST and write the result to a file
+        logger.info("Evaluating template using JTE...");
+        String jteTemplateBody = main.readStream(main.getFileFromResourceAsStream("template/create_datastore.jte"));
+        String jteEvalResult = main.evaluateTemplate("create_datastore", jteTemplateBody, struct, TemplateEngineType.JTE);
+        main.writeToFile("target/02_create_datastore_jte.sql", jteEvalResult);
+
+        // Apply a Jinjava template to the structured AST and write the result to a file
+        logger.info("Evaluating template using Jinjava...");
+        String jinjaTemplateBody = main.readStream(main.getFileFromResourceAsStream("template/create_datastore.jinja"));
+        String jinjaEvalResult = main.evaluateTemplate("create_datastore", jinjaTemplateBody, struct, TemplateEngineType.JINJAVA);
+        main.writeToFile("target/02_create_datastore_jinjava.sql", jinjaEvalResult);
 
         // parse an ALTER TABLE statement and write the structured AST to a file
         stmt = main.readStream(main.getFileFromResourceAsStream("sql/03_alter_table.sql"));
@@ -96,9 +123,10 @@ public class Main {
         return true;
     }
 
-    private String evaluateTemplate(String templateName, String templateBody, IASTObject datastore) {
+    private String evaluateTemplate(String templateName, String templateBody, IASTObject datastore, TemplateEngineType engineType) {
 
-        ApacheVelocityTemplateService engine = new ApacheVelocityTemplateService();
+        // Create the appropriate template service using the factory
+        ITemplateService engine = TemplateServiceFactory.createTemplateService(engineType);
         engine.initialize();
 
         ITemplate template = new ITemplate() {
@@ -123,6 +151,13 @@ public class Main {
         String result = engine.evaluate(template, parameters);
 
         return result;
+    }
+    
+    /**
+     * Helper method for backwards compatibility - uses Velocity by default
+     */
+    private String evaluateTemplate(String templateName, String templateBody, IASTObject datastore) {
+        return evaluateTemplate(templateName, templateBody, datastore, TemplateEngineType.VELOCITY);
     }
 
 }
