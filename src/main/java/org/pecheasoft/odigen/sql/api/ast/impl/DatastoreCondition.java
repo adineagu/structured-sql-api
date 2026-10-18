@@ -1,7 +1,10 @@
 package org.pecheasoft.odigen.sql.api.ast.impl;
 
-import org.pecheasoft.odigen.sql.api.ast.IDatastoreCondition;
+import java.util.List;
+
+import org.pecheasoft.odigen.sql.api.ast.SemanticAnnotationSet;
 import org.pecheasoft.odigen.sql.parse.algebra.ITableConstraint;
+import org.pecheasoft.odigen.sql.util.annotation.AnnotationTransformer;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
@@ -12,7 +15,7 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include;
  */
 
 @JsonInclude(Include.NON_NULL)
-public class DatastoreCondition extends DatastoreConstraint implements IDatastoreCondition {
+public class DatastoreCondition extends DatastoreConstraint {
 
     private final String conditionExpression;
 
@@ -26,12 +29,13 @@ public class DatastoreCondition extends DatastoreConstraint implements IDatastor
                 key.isDefinedInDatabase(),
                 key.isActive(),
                 key.getMessage(),
-                key.getAnnotations()
+                new SemanticAnnotationSet(
+                    AnnotationTransformer.toSemanticList(List.copyOf(key.getAnnotations()))
+                )
         );   
         this.conditionExpression = key.getConditionText();
     }
 
-    @Override
     public String getCondition() {
         return conditionExpression;
     }

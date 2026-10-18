@@ -7,65 +7,57 @@ package org.pecheasoft.odigen.template.velocity;
 
 import java.io.StringWriter;
 import java.util.Collection;
-import java.util.stream.Collectors;
+import java.util.HashMap;
+import java.util.Map;
 
-import org.apache.commons.lang3.tuple.Pair;
 import org.apache.velocity.Template;
 import org.apache.velocity.VelocityContext;
 import org.apache.velocity.app.Velocity;
 import org.apache.velocity.app.VelocityEngine;
 import org.apache.velocity.runtime.resource.loader.StringResourceLoader;
 import org.apache.velocity.runtime.resource.util.StringResourceRepository;
-import org.pecheasoft.odigen.template.ITemplate;
-import org.pecheasoft.odigen.template.ITemplateParameter;
-import org.pecheasoft.odigen.template.ITemplateService;
+import org.pecheasoft.odigen.project.ProjectObject;
+import org.pecheasoft.odigen.template.TemplateEngineFacade;
+import org.pecheasoft.odigen.template.TemplateParameter;
 
 /**
  *
  * @author Adi Neagu
  */
-public final class ApacheVelocityTemplateService implements ITemplateService {
+public final class ApacheVelocityTemplateService implements TemplateEngineFacade {
 
     protected VelocityEngine engine;
     protected StringResourceRepository repo;
+
+    private final Map<String, String> templateCache = new HashMap<>();
 
     public ApacheVelocityTemplateService() {
         initialize();
     }
 
-    @Override
     public void initialize() {
         initVelocityEngine();
     }
 
     @Override
-    public void loadTemplates(Collection<ITemplate> templates) {
-        templates.stream().forEach (
-            t -> {if (repo.getStringResource(t.getName()) != null) repo.removeStringResource(t.getName());}
+    public void loadTemplates(Collection<ProjectObject> templates) {
+        templateCache.clear();
+        templates.forEach(t ->
+            templateCache.put(t.id().qualifiedName(), t.content())
         );
-
-        templates.stream().forEach (t -> repo.putStringResource(t.getName(), t.getBody(), "UTF-8"));
     }
 
     @Override
-    public String evaluate(ITemplate template, Collection<ITemplateParameter> parameters) {
+    public String resolve(ProjectObject template, Collection<TemplateParameter> parameters) {
         VelocityContext context = new VelocityContext();
-        parameters.forEach(p -> context.put(p.getName(), p.getValue()));
+        parameters.forEach(p -> context.put(p.name(), p.value()));
 
-        Template repoTemplate = Velocity.getTemplate(template.getName());
+        Template repoTemplate = Velocity.getTemplate(template.id().qualifiedName());
 
         StringWriter writer = new StringWriter();
         repoTemplate.merge(context, writer);
 
         return writer.toString();
-    }
-
-    @Override
-    public String evaluate(Collection<Pair<ITemplate, Collection<ITemplateParameter>>> templatesCollection) {
-        return templatesCollection
-            .stream()
-            .map(p -> evaluate(p.getLeft(), p.getRight()))
-            .collect(Collectors.joining("\n"));
     }
 
     private void initVelocityEngine() {

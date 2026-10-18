@@ -14,8 +14,8 @@
  */
 package org.pecheasoft.odigen.sql.api.ast.impl;
 
-import org.pecheasoft.odigen.sql.api.ast.IExpression;
-import org.pecheasoft.odigen.sql.util.annotation.impl.AnnotatedObject;
+import org.pecheasoft.odigen.sql.api.ast.SemanticAnnotationSet;
+import org.pecheasoft.odigen.sql.api.ast.SemanticExpression;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
@@ -27,9 +27,10 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  */
 @JsonPropertyOrder({"className", "text"})
 @JsonInclude(Include.NON_NULL)
-public class Expression extends AnnotatedObject implements IExpression {
+public class Expression implements SemanticExpression {
 
-    private final String text; 
+    private final String text;
+    SemanticAnnotationSet annotations;
 
     public Expression(String text) {
         this.text = text;
@@ -46,8 +47,12 @@ public class Expression extends AnnotatedObject implements IExpression {
     }
 
     @Override
-    public String getName() {
-        return null;
+    public SemanticAnnotationSet annotations() {
+        return annotations;
+    }
+
+    public void setAnnotations(SemanticAnnotationSet annotations) {
+        this.annotations = annotations;
     }
 
 }

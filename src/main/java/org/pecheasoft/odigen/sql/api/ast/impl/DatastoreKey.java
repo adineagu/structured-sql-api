@@ -1,9 +1,10 @@
 package org.pecheasoft.odigen.sql.api.ast.impl;
 
-import java.util.Collection;
+import java.util.List;
 
-import org.pecheasoft.odigen.sql.api.ast.IDatastoreKey;
+import org.pecheasoft.odigen.sql.api.ast.SemanticAnnotationSet;
 import org.pecheasoft.odigen.sql.parse.algebra.ITableConstraint;
+import org.pecheasoft.odigen.sql.util.annotation.AnnotationTransformer;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
@@ -14,9 +15,9 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include;
  */
 
 @JsonInclude(Include.NON_NULL)
-public class DatastoreKey extends DatastoreConstraint implements IDatastoreKey {
+public class DatastoreKey extends DatastoreConstraint {
         
-    private final Collection<String> keyColumns;
+    private final List<String> keyColumns;
     private final boolean primaryKey;
     private final boolean alternateKey;
     private final boolean nonUniqueIndex;
@@ -31,16 +32,17 @@ public class DatastoreKey extends DatastoreConstraint implements IDatastoreKey {
             key.isDefinedInDatabase(), 
             key.isActive(),
             key.getMessage(),
-            key.getAnnotations()  
+            new SemanticAnnotationSet(
+                AnnotationTransformer.toSemanticList(List.copyOf(key.getAnnotations()))
+            )
         );   
 
         this.primaryKey = key.isPrimaryKey();
         this.alternateKey = key.isAlternateKey();
         this.nonUniqueIndex = key.isNonUniqueIndex();
-        this.keyColumns = key.getKeyColumns();
+        this.keyColumns = List.copyOf(key.getKeyColumns());
     }
 
-    @Override
     public String getKeyType() {
         if (isPrimaryKey()) {
             return "PRIMARY KEY";
@@ -53,22 +55,18 @@ public class DatastoreKey extends DatastoreConstraint implements IDatastoreKey {
         }
     }
     
-    @Override
-    public Collection<String> getKeyColumns() {
+    public List<String> getKeyColumns() {
         return keyColumns;
     }
 
-    @Override
     public Boolean isPrimaryKey() {
         return primaryKey;
     }
 
-    @Override
     public Boolean isAlternateKey() {
         return alternateKey;
     }
 
-    @Override
     public boolean isNonUniqueIndex() {
         return nonUniqueIndex;
     }

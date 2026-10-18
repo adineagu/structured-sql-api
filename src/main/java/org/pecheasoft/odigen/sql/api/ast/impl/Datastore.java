@@ -14,18 +14,14 @@
  */
 package org.pecheasoft.odigen.sql.api.ast.impl;
 
-import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
-import org.pecheasoft.odigen.sql.api.ast.IDatastore;
-import org.pecheasoft.odigen.sql.api.ast.IDatastoreAttribute;
-import org.pecheasoft.odigen.sql.api.ast.IDatastoreCondition;
-import org.pecheasoft.odigen.sql.api.ast.IDatastoreKey;
+import org.pecheasoft.odigen.sql.api.ast.SemanticAnnotationSet;
+import org.pecheasoft.odigen.sql.api.ast.SemanticModel;
 import org.pecheasoft.odigen.sql.util.CatalogConstants;
-import org.pecheasoft.odigen.sql.util.annotation.impl.AnnotatedObject;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
@@ -36,32 +32,18 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include;
  */
 
 @JsonInclude(Include.NON_NULL)
-public class Datastore extends AnnotatedObject implements IDatastore {
+public class Datastore implements SemanticModel {
 
     private String name;
     private String description;
-    private Collection<IDatastoreAttribute> attributes;
-    private IDatastore metadata;
-    private Collection<IDatastoreKey> keys;
-    private Collection<IDatastoreCondition> conditions;
+    private List<DatastoreAttribute> attributes;
+    private List<DatastoreKey> keys;
+    private List<DatastoreCondition> conditions;
+    private SemanticAnnotationSet annotations;
     
     public Datastore() {
     }
     
-    public Datastore(String name) {
-        this.name = name;
-    }
-    
-    public Datastore(IDatastore metadata) {
-        this.metadata = metadata;
-        this.attributes = new ColumnsList<>(metadata.getAttributes());
-        this.name = metadata.getName();
-        setAnnotations(metadata.getAnnotations());
-        this.keys = metadata.getKeys();
-        this.conditions = metadata.getConditions();
-    }    
-    
-    @Override
     public String getBasename() {
         String dsName = getName();
         
@@ -72,7 +54,6 @@ public class Datastore extends AnnotatedObject implements IDatastore {
         }
     }
     
-    @Override
     public String getName() {
         return name;
     }
@@ -81,7 +62,6 @@ public class Datastore extends AnnotatedObject implements IDatastore {
         this.name = name;
     }
     
-    @Override
     public String getQualifier() {
         if (name.contains(CatalogConstants.IDENTIFIER_DELIMITER)) {
             return StringUtils.substringBeforeLast(name, CatalogConstants.IDENTIFIER_DELIMITER);
@@ -90,7 +70,6 @@ public class Datastore extends AnnotatedObject implements IDatastore {
         }
     }   
 
-    @Override
     public String getDescription() {
         return description;
     }
@@ -99,64 +78,48 @@ public class Datastore extends AnnotatedObject implements IDatastore {
         this.description = description;
     }
     
-    @Override
-    public Collection<IDatastoreAttribute> getAttributes() {
-        List<IDatastoreAttribute> attrs = attributes
+    public List<DatastoreAttribute> getAttributes() {
+        List<DatastoreAttribute> attrs = attributes
                 .stream()
-                .sorted(Comparator.comparing(IDatastoreAttribute::getPosition))
+                .sorted(Comparator.comparing(DatastoreAttribute::getPosition))
                 .collect(Collectors.toList());
         return new ColumnsList<>(attrs);
-        
     }
     
-    public void setAttributes(List<IDatastoreAttribute> attributes) {
+    public void setAttributes(List<DatastoreAttribute> attributes) {
         this.attributes = new ColumnsList<>(attributes);
     }
     
-    @Override
-    public IDatastoreAttribute getAttribute(String attributeName) {
+    public DatastoreAttribute getAttribute(String attributeName) {
         return attributes.stream().filter(attr -> attr.getName().equalsIgnoreCase(attributeName)).findFirst().orElse(null);
     }
     
-    @Override
-    public Collection<IDatastoreAttribute> getAttributes(String condition) {
+    public List<DatastoreAttribute> getAttributes(String condition) {
         return null;
     }
-    
-    @Override
-    public void copyProperties(IDatastore source) {
-        if (source == null) {
-            throw new IllegalArgumentException("source cannot be null");
-        }
-        
-        if (source == this) {
-            return;
-        }
-        
-        metadata.copyProperties(source);
-    }
-    
-    @Override
-    public Collection<IDatastoreKey> getKeys() {
+
+    public List<DatastoreKey> getKeys() {
         return this.keys;
     }
 
-    public void setKeys(Collection<IDatastoreKey> keys) {
+    public void setKeys(List<DatastoreKey> keys) {
         this.keys = keys;
     }       
 
-    @Override
-    public Collection<IDatastoreCondition> getConditions() {
+    public List<DatastoreCondition> getConditions() {
         return conditions;
     }
 
-    public void setConditions(Collection<IDatastoreCondition> conditions) {
+    public void setConditions(List<DatastoreCondition> conditions) {
         this.conditions = conditions;
-    }    
-
-    @Override
-    public String toJson() {
-        return IDatastore.super.toJson();
     }
 
+    @Override
+    public SemanticAnnotationSet annotations() {
+        return annotations;
+    }
+
+    public void setAnnotations(SemanticAnnotationSet annotations) {
+        this.annotations = annotations;
+    }
 }

@@ -15,10 +15,9 @@
 package org.pecheasoft.odigen.sql.api.ast.impl;
 
 
-import org.pecheasoft.odigen.sql.api.ast.IExpression;
-import org.pecheasoft.odigen.sql.api.ast.ISelectItem;
-import org.pecheasoft.odigen.sql.api.ast.ITargetAttribute;
-import org.pecheasoft.odigen.sql.util.annotation.impl.AnnotatedObject;
+import org.pecheasoft.odigen.sql.api.ast.SemanticExpression;
+import org.pecheasoft.odigen.sql.api.ast.SemanticAnnotationSet;
+import org.pecheasoft.odigen.sql.api.ast.SemanticAssignment;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -31,31 +30,29 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  */
 @JsonPropertyOrder({"className", "name", "alias", "expression"})
 @JsonInclude(Include.NON_NULL)
-public class SelectItem extends AnnotatedObject implements ISelectItem {
+public class SelectItem implements SemanticExpression {
     private final Expression expression;
     private final String alias;
+    private SemanticAnnotationSet annotations;
     
     @JsonIgnore
-    private ITargetAttribute targetColumn;
+    private SemanticAssignment targetColumn;
 
     public SelectItem(Expression expression, String alias) {
         this.expression = expression;
         this.alias = alias;
     }
 
-    @Override
-    public IExpression getExpression() {
+    public SemanticExpression getExpression() {
         return expression;
     }
 
-    @Override
     public String getAlias() {
         return alias;
     }
     
     @JsonIgnore
-    @Override
-    public ITargetAttribute getTargetColumn() {
+    public SemanticAssignment getTargetColumn() {
         return targetColumn;
     }
 
@@ -69,13 +66,17 @@ public class SelectItem extends AnnotatedObject implements ISelectItem {
         return String.format("%s as %s", expression.getText(), this.alias);
     }
 
-    public void setTargetColumn(ITargetAttribute targetColumn) {
+    public void setTargetColumn(SemanticAssignment targetColumn) {
         this.targetColumn = targetColumn;
-    }            
+    }
 
     @Override
-    public String getName() {
-        return getAlias();
+    public SemanticAnnotationSet annotations() {
+        return annotations;
+    }
+
+    public void setAnnotations(SemanticAnnotationSet annotations) {
+        this.annotations = annotations;
     }
 
 }
