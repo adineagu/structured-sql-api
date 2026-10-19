@@ -12,6 +12,7 @@ import org.pecheasoft.odigen.template.TemplateParameter;
 import freemarker.template.Configuration;
 import freemarker.template.Template;
 import freemarker.template.Version;
+import freemarker.cache.StringTemplateLoader;
 
 /**
  * FreeMarker implementation of the template service.
@@ -22,10 +23,9 @@ import freemarker.template.Version;
 public class FreeMarkerTemplateService implements TemplateEngineFacade {
 
     private Configuration cfg;
-    private Map<String, String> templateCache;
+    private StringTemplateLoader loader = new StringTemplateLoader();
 
     public FreeMarkerTemplateService() {
-        this.templateCache = new HashMap<>();
         initialize();
     }
 
@@ -33,6 +33,7 @@ public class FreeMarkerTemplateService implements TemplateEngineFacade {
         // Configure FreeMarker
         cfg = new Configuration(new Version("2.3.33"));
         cfg.setDefaultEncoding("UTF-8");
+        cfg.setTemplateLoader(loader);
         cfg.setTemplateExceptionHandler(freemarker.template.TemplateExceptionHandler.RETHROW_HANDLER);
         cfg.setLogTemplateExceptions(false);
         cfg.setWrapUncheckedExceptions(true);
@@ -42,10 +43,14 @@ public class FreeMarkerTemplateService implements TemplateEngineFacade {
     @Override
     public void loadTemplates(Collection<ProjectObject> templates) {
         // Clear existing templates
-        templateCache.clear();
+        loader = new StringTemplateLoader();
+        cfg.setTemplateLoader(loader);
         
         // Store template definitions
-        templates.forEach(t -> templateCache.put(t.id().qualifiedName(), t.content()));
+        for (ProjectObject template : templates) {
+            loader.putTemplate(template.id().qualifiedName(), template.content());
+        }
+        cfg.clearTemplateCache();
     }
 
     @Override
@@ -56,12 +61,9 @@ public class FreeMarkerTemplateService implements TemplateEngineFacade {
             parameters.forEach(p -> dataModel.put(p.name(), p.value()));
             
             // Get or create template
-            String templateBody = templateCache.getOrDefault(template.id().qualifiedName(), template.content());
-            Template fmTemplate = new Template(
-                template.id().qualifiedName(), 
-                templateBody, 
-                cfg
-            );
+            loader.putTemplate(template.id().qualifiedName(), template.content());
+            cfg.clearTemplateCache();
+            Template fmTemplate = cfg.getTemplate(template.id().qualifiedName());
             
             // Process template
             StringWriter writer = new StringWriter();

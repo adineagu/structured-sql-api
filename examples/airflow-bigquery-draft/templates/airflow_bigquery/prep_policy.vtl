@@ -1,0 +1,25 @@
+## Shared target-write policy for this project's prep layer.
+## Datastore definitions describe structure; runtime bindings belong here.
+$ctx.require($mapping.target.qualifier.equalsIgnoreCase("prep"), "This strategy requires a prep-layer target")
+#set($technicalPolicy = {
+    "LOAD_ID": {
+        "dataType": "VARCHAR", "expression": "@load_id",
+        "insert": true, "update": false,
+        "parameter": "load_id", "parameterType": "STRING"
+    },
+    "UPDATE_ID": {
+        "dataType": "VARCHAR", "expression": "@load_id",
+        "insert": true, "update": true,
+        "parameter": "load_id", "parameterType": "STRING"
+    },
+    "LOAD_DATE": {
+        "dataType": "TIMESTAMP", "expression": "CURRENT_TIMESTAMP()",
+        "insert": true, "update": false,
+        "parameter": "", "parameterType": ""
+    },
+    "EFFECTIVE_DATE": {
+        "dataType": "DATE", "expression": "@effective_date",
+        "insert": true, "update": true,
+        "parameter": "effective_date", "parameterType": "DATE"
+    }
+})

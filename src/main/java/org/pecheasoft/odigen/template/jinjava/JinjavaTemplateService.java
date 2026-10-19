@@ -54,9 +54,7 @@ public class JinjavaTemplateService implements TemplateEngineFacade {
     public String resolve(ProjectObject template, Collection<TemplateParameter> parameters) {
         try {
             // Ensure template is loaded
-            if (!templateCache.containsKey(template.id().qualifiedName())) {
-                templateCache.put(template.id().qualifiedName(), template.content());
-            }
+            templateCache.put(template.id().qualifiedName(), template.content());
             
             // Convert parameters to a context map
             Map<String, Object> context = parameters.stream()

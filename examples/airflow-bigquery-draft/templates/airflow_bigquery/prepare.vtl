@@ -1,0 +1,80 @@
+#parse("library.Query")
+#parse("naming")
+$ctx.require($ctx.kind($mapping) == "insert" && !$ctx.has($mapping.multiInsertTargets), "A single-target INSERT is required")
+$ctx.require($ctx.kind($mapping.query) == "simple", "A simple outer SELECT is required")
+$ctx.require(!$mapping.query.isDistinct && !$ctx.has($mapping.query.groupByList) && !$ctx.has($mapping.query.havingList), "Grouped and DISTINCT loads require a separate strategy")
+$ctx.require(!$ctx.hasIntegrationSettings($mapping), "Dedicated integration fields are unsupported")
+$ctx.validate($mapping)
+$ctx.require($mapping.annotations() && $mapping.annotations().has("BIGQUERY") && $mapping.annotations().has("AIRFLOW"), "BIGQUERY and AIRFLOW annotations are required")
+#set($bq = $mapping.annotations().get("BIGQUERY"))
+#set($airflow = $mapping.annotations().get("AIRFLOW"))
+#set($bqProperties = ["WRITE_MODE"])
+#set($airflowProperties = ["DAG_ID", "TASK_ID", "CONNECTION_ID", "LOCATION"])
+
+#foreach($entry in $bq.attributes().entrySet())
+$ctx.require($bqProperties.contains($entry.key), "Unsupported BIGQUERY property: $entry.key")
+#end
+#foreach($entry in $airflow.attributes().entrySet())
+$ctx.require($airflowProperties.contains($entry.key), "Unsupported AIRFLOW property: $entry.key")
+#end
+$ctx.require($bq.attribute("WRITE_MODE") == "MERGE", "WRITE_MODE must be MERGE")
+#foreach($name in ["DAG_ID", "TASK_ID", "CONNECTION_ID", "LOCATION"])
+$ctx.require($airflow.attribute($name) && $airflow.attribute($name).matches('[A-Za-z0-9_.-]+'), "Missing or unsafe AIRFLOW property: $name")
+#end
+#set($dagId = $airflow.attribute("DAG_ID"))
+#set($taskId = $airflow.attribute("TASK_ID"))
+#set($sqlFile = "${dagId}.sql")
+#if($artifactName)#set($sqlFile = "${artifactName}.sql")#end
+#set($keys = [])
+#set($primaryKeyCount = 0)
+#foreach($key in $mapping.target.datastore.keys)
+#if($key.isPrimaryKey())
+#set($primaryKeyCount = $primaryKeyCount + 1)
+#set($keys = $key.keyColumns)
+#end
+#end
+$ctx.require($primaryKeyCount == 1 && !$keys.isEmpty(), "MERGE requires exactly one non-empty primary key in the target datastore definition")
+#set($business = {})
+#set($updates = {})
+#set($inserts = {})
+#set($parameters = {})
+#foreach($column in $mapping.columns)
+$ctx.require($column.name.matches('[A-Za-z_][A-Za-z0-9_]*'), "Unsupported column identifier")
+$ctx.require(!$business.containsKey($column.name), "Duplicate business assignment")
+$ctx.require(!!$column.metadata, "Unknown target column")
+#set($ignored = $business.put($column.name, "S.${column.name}"))
+#end
+#foreach($key in $keys)
+$ctx.require($business.containsKey($key), "Match key must be assigned by the business SELECT")
+$ctx.require($mapping.target.datastore.getAttribute($key).isMandatory, "Nullable match keys require a separate strategy")
+#end
+## Business projections must expose target names to the MERGE source alias S.
+#foreach($item in $mapping.query.selectList)
+$ctx.require($item.alias && $item.alias.equalsIgnoreCase($item.targetColumn.name), "Business projections must alias their target column names")
+#end
+#foreach($entry in $business.entrySet())
+#if(!$keys.contains($entry.key))#set($ignored = $updates.put($entry.key, $entry.value))#end
+#end
+#parse("prep_policy")
+#foreach($entry in $technicalPolicy.entrySet())
+#set($name = $entry.key)
+#set($rule = $entry.value)
+$ctx.require(!!$mapping.target.datastore.getAttribute($name), "Target datastore is missing prep technical column: $name")
+$ctx.require($mapping.target.datastore.getAttribute($name).dataType == $rule.dataType, "Unexpected datatype for prep technical column: $name")
+$ctx.require(!$business.containsKey($name), "Technical column is already assigned by business SQL: $name")
+$ctx.require(!$keys.contains($name), "Prep technical columns cannot be match keys")
+#if($rule.parameter != "")
+$ctx.require(!$parameters.containsKey($rule.parameter) || $parameters.get($rule.parameter) == $rule.parameterType, "Conflicting query parameter types")
+#set($ignored = $parameters.put($rule.parameter, $rule.parameterType))
+#end
+#if($rule.insert)#set($ignored = $inserts.put($name, $rule.expression))#end
+#if($rule.update)#set($ignored = $updates.put($name, $rule.expression))#end
+#end
+#foreach($column in $mapping.target.datastore.attributes)
+#if(!$business.containsKey($column.name) && !$technicalPolicy.containsKey($column.name))
+$ctx.require(!$column.isMandatory, "Unassigned mandatory target column")
+#end
+#end
+#foreach($entry in $business.entrySet())#set($ignored = $inserts.put($entry.key, $entry.value))#end
+$ctx.require(!$updates.isEmpty(), "MERGE requires at least one updated column")
+

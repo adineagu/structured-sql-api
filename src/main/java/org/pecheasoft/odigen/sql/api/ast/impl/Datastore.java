@@ -78,6 +78,7 @@ public class Datastore implements SemanticModel {
         this.description = description;
     }
     
+    /** Returns a sorted collection copy; elements are shared. Use setAttributes to replace membership. */
     public List<DatastoreAttribute> getAttributes() {
         List<DatastoreAttribute> attrs = attributes
                 .stream()

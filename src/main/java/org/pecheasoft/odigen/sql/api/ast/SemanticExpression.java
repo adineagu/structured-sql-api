@@ -14,6 +14,10 @@
  */
 package org.pecheasoft.odigen.sql.api.ast;
 
+import java.util.List;
+import java.util.function.Function;
+import org.pecheasoft.odigen.sql.api.ast.impl.DatastoreReferenceNode;
+
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 
@@ -26,4 +30,13 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include;
 @JsonInclude(Include.NON_NULL)
 public interface SemanticExpression extends SemanticModel {
     String getText();
+
+    default List<DatastoreReferenceNode> getTableReferences() {
+        return List.of();
+    }
+
+    /** Render only table names using a strategy-supplied function; getText remains unchanged. */
+    default String render(Function<DatastoreReferenceNode, String> names) {
+        return getText();
+    }
 }

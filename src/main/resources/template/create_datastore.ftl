@@ -11,6 +11,6 @@ RESOURCE '${stageDatastoreName}'
      LOAD_ID	NUMBER(22,0) NOT NULL
     ,EFFECTIVE_DATE	DATE NOT NULL  
 <#list datastore.attributes as col>
-    ,${col.name?lower_case} <#if col.isAnnotatedWith("PROPERTIES") && col.getAnnotation("PROPERTIES").getParameters().CHAR_LENGTH_SEMANTIC?? && col.getAnnotation("PROPERTIES").getParameters().CHAR_LENGTH_SEMANTIC == "CHAR">VARCHAR2_CHAR(${col.Length})<#else>${col.DDLDataType}</#if><#if col.isMandatory> NOT NULL</#if>
+    ,${col.name?lower_case} <#if col.annotations()?? && col.annotations().has("PROPERTIES") && (col.annotations().get("PROPERTIES").attribute("CHAR_LENGTH_SEMANTIC")!"") == "CHAR">VARCHAR2_CHAR(${col.length})<#else>${col.getDDLDataType()}</#if><#if col.isMandatory> NOT NULL</#if>
 </#list>
 );

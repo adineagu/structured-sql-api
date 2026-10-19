@@ -36,6 +36,8 @@ import org.pecheasoft.odigen.sql.parse.algebra.ITableConstraint;
 import org.pecheasoft.odigen.sql.parse.algebra.InPredicate;
 import org.pecheasoft.odigen.sql.parse.algebra.Insert;
 import org.pecheasoft.odigen.sql.parse.algebra.Join;
+import org.pecheasoft.odigen.sql.parse.algebra.Limit;
+import org.pecheasoft.odigen.sql.parse.algebra.Sort;
 import org.pecheasoft.odigen.sql.parse.algebra.MultiInsert;
 import org.pecheasoft.odigen.sql.parse.algebra.MultiInsertTarget;
 import org.pecheasoft.odigen.sql.parse.algebra.NamedExpr;
@@ -66,8 +68,14 @@ import org.pecheasoft.odigen.sql.util.annotation.AnnotationTransformer;
 public class SemanticModelBuilder extends BaseAlgebraVisitor<SemanticModelBuilder.Context, SemanticModel> {
 
     Map<String, SemanticQueryBlock> withQueries = TUtil.newHashMap();
+    private Map<String, NamedQuery> withDefinitions = new LinkedHashMap<>();
+    private final Set<NamedQuery> resolvingWithQueries = Collections.newSetFromMap(new IdentityHashMap<>());
 
     private SemanticModel rootObject = null;
+
+    private Expression expression(String text) {
+        return new Expression(text, withDefinitions.keySet());
+    }
 
     public static class Context {
         final Map<Integer, SemanticAssignment> targetColsPosMap = TUtil.newHashMap();
@@ -126,10 +134,7 @@ public class SemanticModelBuilder extends BaseAlgebraVisitor<SemanticModelBuilde
     @Override
     public SemanticModel visitMultiInsert(Context ctx, Stack<Expr> stack, MultiInsert expr) {
         final InsertNode insertStmt = new InsertNode();
-        SemanticQueryBlock query = new SemanticSetQueryBlock();
-        ctx.queryBlock = query;
-
-        query = (SemanticSetQueryBlock) visit(ctx, stack, expr.getSubQuery());
+        SemanticQueryBlock query = (SemanticQueryBlock) visit(ctx, stack, expr.getSubQuery());
 
         insertStmt.setQuery(query);
 
@@ -150,14 +155,18 @@ public class SemanticModelBuilder extends BaseAlgebraVisitor<SemanticModelBuilde
             MultiInsertTableNode targ = new MultiInsertTableNode();
             String name = insTarg.getTableName();
             String alias = insTarg.getTableAlias();
-            String condition = insTarg.getCondition().getText();
+            String condition = insTarg.getCondition() == null ? null : SQLExpressionFormatter.format(insTarg.getCondition());
 
             targ.setTarget(new DatastoreReferenceNode(name, alias));
             targ.setCondition(condition);
+            targ.setIntegrationType(insTarg.getIntegrationType());
+            targ.setUpdateKey(insTarg.getUpdateKey());
+            targ.setRejectLimit(insTarg.getRejectLimit());
+            targ.setRejectLimitUnit(insTarg.getRejectLimitUnit());
 
-            if (expr.getAnnotations() != null) {
+            if (insTarg.getAnnotations() != null) {
                 SemanticAnnotationSet semanticAnnotationSet = new SemanticAnnotationSet(
-                    AnnotationTransformer.toSemanticList(List.copyOf(expr.getAnnotations()))
+                    AnnotationTransformer.toSemanticList(List.copyOf(insTarg.getAnnotations()))
                 );
                 targ.setAnnotations(semanticAnnotationSet);
             }
@@ -170,7 +179,7 @@ public class SemanticModelBuilder extends BaseAlgebraVisitor<SemanticModelBuilde
 
             List<SelectItem> targetCols = IntStream
                     .rangeClosed(0, insTarg.getTargetColumns().size() - 1)
-                    .mapToObj(pos -> new SelectItem(new Expression((exprMap.get(Integer.toString(pos))).getText()), insTarg.getTargetColumns().get(pos).getName()))
+                    .mapToObj(pos -> new SelectItem(expression((exprMap.get(Integer.toString(pos))).getText()), insTarg.getTargetColumns().get(pos).getName()))
                     .collect(Collectors.toList());
 
             targ.setSelectList(targetCols);
@@ -184,6 +193,10 @@ public class SemanticModelBuilder extends BaseAlgebraVisitor<SemanticModelBuilde
     @Override
     public InsertNode visitInsert(final Context ctx, final Stack<Expr> stack, final Insert expr) {
         final InsertNode insertStmt = new InsertNode();
+        insertStmt.setIntegrationType(expr.getIntegrationType());
+        insertStmt.setUpdateKey(expr.getUpdateKey());
+        insertStmt.setRejectLimit(expr.getRejectLimit());
+        insertStmt.setRejectLimitUnit(expr.getRejectLimitUnit());
 
         final DatastoreReferenceNode targetTable = getTargetTable(expr);
         targetTable.setIsTarget(true);
@@ -212,13 +225,15 @@ public class SemanticModelBuilder extends BaseAlgebraVisitor<SemanticModelBuilde
 
     private DatastoreReferenceNode getTargetTable(final Insert insert) {
         final String targetTableName = insert.getTableName();
-        final DatastoreReferenceNode table = new DatastoreReferenceNode(targetTableName);
+        final DatastoreReferenceNode table = new DatastoreReferenceNode(targetTableName, insert.getTableAlias());
         return table;
     }
 
     private List<SemanticAssignment> getTargetColumns(final Context ctx, final Insert insert,
             final DatastoreReferenceNode table) {
         final List<SemanticAssignment> targetColumns = TUtil.newList();
+
+        if (insert.getTargetColumns() == null) return targetColumns;
 
         int i = 0;
         for (final org.pecheasoft.odigen.sql.parse.algebra.TargetColumn col : insert.getTargetColumns()) {
@@ -253,19 +268,19 @@ public class SemanticModelBuilder extends BaseAlgebraVisitor<SemanticModelBuilde
         //SemanticQueryBlock query = new SemanticSimpleQueryBlock();
         //newCtx.queryBlock = query;
 
-        SemanticQueryBlock query = (SemanticSimpleQueryBlock) visit(newCtx, stack, expr.getSubQuery());
+        SemanticQueryBlock query = (SemanticQueryBlock) visit(newCtx, stack, expr.getSubQuery());
 
         return new SemanticNestedQueryBlock(query, expr.getAlias());
     }
 
     @Override
-    public SemanticSimpleQueryBlock visitSimpleTableSubQuery(Context ctx, Stack<Expr> stack, SimpleTableSubQuery expr) {
+    public SemanticQueryBlock visitSimpleTableSubQuery(Context ctx, Stack<Expr> stack, SimpleTableSubQuery expr) {
         final Context newCtx = new Context();
 
         //SemanticSimpleQueryBlock query = new SemanticSimpleQueryBlock();
         //newCtx.queryBlock = query;
 
-        SemanticSimpleQueryBlock query = (SemanticSimpleQueryBlock) visit(newCtx, stack, expr.getSubQuery());
+        SemanticQueryBlock query = (SemanticQueryBlock) visit(newCtx, stack, expr.getSubQuery());
 
         return query;
     }
@@ -285,7 +300,7 @@ public class SemanticModelBuilder extends BaseAlgebraVisitor<SemanticModelBuilde
         SemanticSetQueryBlock queryBlockSet = new SemanticSetQueryBlock();
 
         for (int i = 0; i < expr.getOperands().length; i++) {
-            final Projection proj = (Projection) expr.getOperands()[i];
+            final Expr operand = expr.getOperands()[i];
 
             final SetOperation.Type setOpType = expr.getOperationTypes()[i];
             String setOperation = null;
@@ -297,17 +312,10 @@ public class SemanticModelBuilder extends BaseAlgebraVisitor<SemanticModelBuilde
                 }
             }
 
-            final SemanticSimpleQueryBlock qry = (SemanticSimpleQueryBlock) visitProjection(ctx, stack, proj);
+            final SemanticQueryBlock qry = (SemanticQueryBlock) visit(ctx, stack, operand);
 
             
             queryBlockSet.addDataset(new SemanticSetQueryBlock.Dataset(qry, setOperation));
-
-            if (!TUtil.isNullOrEmpty(proj.getAnnotations())) {  
-                SemanticAnnotationSet semanticAnnotationSet = new SemanticAnnotationSet(
-                    AnnotationTransformer.toSemanticList(List.copyOf(proj.getAnnotations()))
-                );
-                qry.setAnnotations(semanticAnnotationSet);
-            }
 
         }
 
@@ -316,29 +324,30 @@ public class SemanticModelBuilder extends BaseAlgebraVisitor<SemanticModelBuilde
 
     @Override
     public SemanticQueryBlock visitQuery(final Context ctx, final Stack<Expr> stack, final org.pecheasoft.odigen.sql.parse.algebra.Query expr) {
-        /*
-            Make sure all queries from the clause WITH are registered
-        */
-        for (int i = 0; i < 10; i++) {
-            if (expr.getWithQueries() != null) {
-                Context specialCtx = new Context();
-                Stack<Expr> specialStack = new Stack<>();
-                expr.getWithQueries().forEach(q -> {
-                    SemanticQueryBlock ret = (SemanticQueryBlock) visit(specialCtx, specialStack, ((NamedQuery) q).getChild());
-
-                    String alias = ((NamedQuery) q).getName();
-                    specialCtx.withQueries.put(alias, new SemanticNestedQueryBlock(ret, alias));
-                });
-
-                if (specialCtx.withQueries != null && !specialCtx.withQueries.isEmpty()) {
-                    withQueries = specialCtx.withQueries;
-                }
+        Map<String, SemanticQueryBlock> enclosingQueries = withQueries;
+        Map<String, NamedQuery> enclosingDefinitions = withDefinitions;
+        withQueries = new HashMap<>(enclosingQueries);
+        withDefinitions = new LinkedHashMap<>(enclosingDefinitions);
+        if (expr.getWithQueries() != null) {
+            for (Expr definition : expr.getWithQueries()) {
+                NamedQuery named = (NamedQuery) definition;
+                withDefinitions.put(named.getName(), named);
+                withQueries.remove(named.getName());
             }
         }
-
-        final SemanticQueryBlock query = (SemanticQueryBlock) super.visitQuery(ctx, stack, expr);
-
-        return query;
+        try {
+            // Resolve each definition once in its declaring scope. Dependencies are
+            // resolved recursively, so forward references do not need repeated passes.
+            if (expr.getWithQueries() != null) {
+                for (Expr definition : expr.getWithQueries()) {
+                    visitRelation(new Context(), new Stack<>(), new Relation(((NamedQuery) definition).getName()));
+                }
+            }
+            return (SemanticQueryBlock) super.visitQuery(ctx, stack, expr);
+        } finally {
+            withQueries = enclosingQueries;
+            withDefinitions = enclosingDefinitions;
+        }
     }
 
     @Override
@@ -348,12 +357,19 @@ public class SemanticModelBuilder extends BaseAlgebraVisitor<SemanticModelBuilde
 
         final SemanticSimpleQueryBlock query = new SemanticSimpleQueryBlock(queryName);
         query.setIsDistinct(expr.isDistinct());
+        if (expr.getAnnotations() != null) {
+            query.setAnnotations(new SemanticAnnotationSet(
+                    AnnotationTransformer.toSemanticList(List.copyOf(expr.getAnnotations()))));
+        }
 
         final List<SelectItem> selItems = getSelectItems(ctx, expr);
         query.setSelectList(selItems);
 
         ctx.queryBlock = query;
-        super.visitProjection(ctx, stack, expr);
+        // Projection expressions already live in semantic Expression objects. Traversing
+        // their algebra subqueries here would replace the enclosing query's context.
+        if (expr.hasChild()) visit(ctx, stack, expr.getChild());
+        ctx.queryBlock = query;
 
         rootObject = query;
 
@@ -374,7 +390,7 @@ public class SemanticModelBuilder extends BaseAlgebraVisitor<SemanticModelBuilde
                 alias = "col_" + Integer.toString(i);
             }
 
-            final Expression expr = new Expression(SQLExpressionFormatter.format(si));
+            final Expression expr = expression(SQLExpressionFormatter.format(si));
             final SelectItem selItem = new SelectItem(expr, alias);
             selectItems.add(selItem);
             if (ctx.targetColsPosMap.get(i) != null) {
@@ -402,7 +418,7 @@ public class SemanticModelBuilder extends BaseAlgebraVisitor<SemanticModelBuilde
 
         for (Expr ic : filterItems) {
             String expressionText = SQLExpressionFormatter.format(ic);
-            Expression expression = new Expression(expressionText);
+            Expression expression = expression(expressionText);
             if (ctx.queryBlock instanceof SemanticSimpleQueryBlock queryBlock) {
                 queryBlock.getWhereList().add((SemanticExpression) expression);
             }
@@ -414,7 +430,7 @@ public class SemanticModelBuilder extends BaseAlgebraVisitor<SemanticModelBuilde
     @Override
     public SemanticModel visitQuantifiedComparisonPredicate(final Context ctx, final Stack<Expr> stack, final QuantifiedComparisonPredicate expr) {
         String expressionText = SQLExpressionFormatter.format(expr);
-        Expression expression = new Expression(expressionText);
+        Expression expression = expression(expressionText);
         if (ctx.inWhereCondition) {
             if (ctx.queryBlock instanceof SemanticSimpleQueryBlock queryBlock) {
                 queryBlock.getWhereList().add(expression);
@@ -442,7 +458,7 @@ public class SemanticModelBuilder extends BaseAlgebraVisitor<SemanticModelBuilde
     @Override
     public SemanticModel visitInPredicate(Context ctx, Stack<Expr> stack, InPredicate expr) {
         String expressionText = SQLExpressionFormatter.format(expr);
-        Expression expression = new Expression(expressionText);
+        Expression expression = expression(expressionText);
         if (ctx.inWhereCondition) {
             if (ctx.queryBlock instanceof SemanticSimpleQueryBlock queryBlock) {
                 queryBlock.getWhereList().add(expression);
@@ -461,7 +477,7 @@ public class SemanticModelBuilder extends BaseAlgebraVisitor<SemanticModelBuilde
         for (Aggregation.GroupElement groupElement : expr.getGroupSet()) {
             for (Expr groupingSet : groupElement.getGroupingSets()) {
                 String expressionText = SQLExpressionFormatter.format(groupingSet);
-                Expression expression = new Expression(expressionText);
+                Expression expression = expression(expressionText);
                 if (ctx.queryBlock instanceof SemanticSimpleQueryBlock queryBlock) {
                     queryBlock.getGroupByList().add(expression);
                 }
@@ -488,7 +504,43 @@ public class SemanticModelBuilder extends BaseAlgebraVisitor<SemanticModelBuilde
     
     @Override
     public SemanticModel visitHaving(final Context ctx, final Stack<Expr> stack, final Having expr) {
-        return super.visitHaving(ctx, stack, expr);
+        SemanticSimpleQueryBlock query = requireSimpleQuery(ctx, "HAVING");
+        SemanticModel result = visit(ctx, stack, expr.getChild());
+        String text = SQLExpressionFormatter.format(expr.getQual());
+        query.setHavingList(new ArrayList<>(List.of(expression(text))));
+        query.setHavingText(text);
+        return result;
+    }
+
+    @Override
+    public SemanticModel visitSort(Context ctx, Stack<Expr> stack, Sort expr) {
+        SemanticSimpleQueryBlock query = requireSimpleQuery(ctx, "ORDER BY");
+        SemanticModel result = visit(ctx, stack, expr.getChild());
+        List<SemanticExpression> items = Arrays.stream(expr.getSortSpecs())
+                .map(spec -> (SemanticExpression) expression(
+                        SQLExpressionFormatter.format(spec.getKey())
+                        + (spec.isAscending() ? " ASC" : " DESC")
+                        + (spec.isNullFirst() ? " NULLS FIRST" : " NULLS LAST")))
+                .collect(Collectors.toCollection(ArrayList::new));
+        query.setOrderByList(items);
+        query.setOrderByText(items.stream().map(SemanticExpression::getText)
+                .collect(Collectors.joining(", ")));
+        return result;
+    }
+
+    @Override
+    public SemanticModel visitLimit(Context ctx, Stack<Expr> stack, Limit expr) {
+        SemanticSimpleQueryBlock query = requireSimpleQuery(ctx, "LIMIT");
+        SemanticModel result = visit(ctx, stack, expr.getChild());
+        query.setLimit(expression(SQLExpressionFormatter.format(expr.getFetchFirstNum())));
+        return result;
+    }
+
+    private SemanticSimpleQueryBlock requireSimpleQuery(Context ctx, String clause) {
+        if (ctx.queryBlock instanceof SemanticSimpleQueryBlock query) {
+            return query;
+        }
+        throw new IllegalArgumentException("Cannot represent " + clause + " outside a simple query block");
     }
 
     @Override
@@ -518,7 +570,7 @@ public class SemanticModelBuilder extends BaseAlgebraVisitor<SemanticModelBuilde
         final SemanticJoinSource left = (SemanticJoinSource) visit(ctx, stack, expr.getLeft());
         final SemanticJoinSource right = (SemanticJoinSource) visit(ctx, stack, expr.getRight());
 
-        final org.pecheasoft.odigen.sql.api.ast.impl.JoinNode join = new org.pecheasoft.odigen.sql.api.ast.impl.JoinNode(expr.getAnnotationParameterValue("PROPERTIES", "NAME"), left, right, expr.getJoinTypeAsSQL(), new Expression(joinExprText));
+        final org.pecheasoft.odigen.sql.api.ast.impl.JoinNode join = new org.pecheasoft.odigen.sql.api.ast.impl.JoinNode(expr.getAnnotationParameterValue("PROPERTIES", "NAME"), left, right, expr.getJoinTypeAsSQL(), expression(joinExprText));
 
         if (ctx.queryBlock instanceof SemanticSimpleQueryBlock queryBlock) {
             queryBlock.getFromList().clear();
@@ -533,12 +585,22 @@ public class SemanticModelBuilder extends BaseAlgebraVisitor<SemanticModelBuilde
 
         String relationName = expr.getName();        
 
-        if (withQueries.containsKey(relationName)) {
-            SemanticQueryBlock withRelation = withQueries.get(relationName);
-            SemanticQueryBlock withRelationCopy = withRelation.shallowCopy();
-            SemanticNestedQueryBlock qry = new SemanticNestedQueryBlock(withRelationCopy, relationName);
-            System.out.println("Processing relation: " + relationName);
-            return qry;
+        if (withDefinitions.containsKey(relationName)) {
+            SemanticQueryBlock query = withQueries.get(relationName);
+            if (query == null) {
+                NamedQuery definition = withDefinitions.get(relationName);
+                if (!resolvingWithQueries.add(definition)) {
+                    throw new IllegalArgumentException("Recursive WITH query cannot be expanded: " + relationName);
+                }
+                try {
+                    query = (SemanticQueryBlock) visit(new Context(), new Stack<>(), definition.getChild());
+                    withQueries.put(relationName, query);
+                } finally {
+                    resolvingWithQueries.remove(definition);
+                }
+            }
+            String alias = expr.getAlias() == null ? relationName : expr.getAlias();
+            return new SemanticNestedQueryBlock(query.shallowCopy(), alias);
         }
 
         final DatastoreReferenceNode table = new DatastoreReferenceNode(expr.getName());

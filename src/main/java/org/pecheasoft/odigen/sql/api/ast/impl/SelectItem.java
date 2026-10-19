@@ -47,6 +47,16 @@ public class SelectItem implements SemanticExpression {
         return expression;
     }
 
+    @Override
+    public java.util.List<DatastoreReferenceNode> getTableReferences() {
+        return expression.getTableReferences();
+    }
+
+    @Override
+    public String render(java.util.function.Function<DatastoreReferenceNode, String> names) {
+        return expression.render(names) + " as " + alias;
+    }
+
     public String getAlias() {
         return alias;
     }

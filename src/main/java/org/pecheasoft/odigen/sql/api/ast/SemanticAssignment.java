@@ -40,11 +40,14 @@ public class SemanticAssignment implements SemanticModel {
     
     @JsonProperty("Metadata")
     private final DatastoreAttribute metadata;
+    @JsonIgnore
+    private final DatastoreReferenceNode table;
 
     public SemanticAssignment(String name, Integer position, DatastoreAttribute columnMetadata, DatastoreReferenceNode table) {
         this.name = name;
         this.position = position;
         this.metadata = columnMetadata;
+        this.table = table;
     }
     
     public String getName() {
@@ -71,62 +74,75 @@ public class SemanticAssignment implements SemanticModel {
         this.expression = expression;
     }       
 
+    @JsonProperty("Metadata")
     public DatastoreAttribute getMetadata() {
-        return metadata;
+        if (metadata != null) return metadata;
+        return table != null && table.getDatastore() != null
+                ? table.getDatastore().getAttribute(name) : null;
+    }
+
+    private DatastoreAttribute requireMetadata() {
+        DatastoreAttribute resolved = getMetadata();
+        if (resolved == null) {
+            throw new IllegalStateException("Column metadata is unresolved for assignment '" + name
+                    + "'. Supply datastore metadata before using metadata-dependent properties.");
+        }
+        return resolved;
     }
 
     @JsonIgnore
     public String getDataType() {        
-        return metadata.getDataType();
+        return requireMetadata().getDataType();
     }
 
     @JsonIgnore
     public Integer getLength() {
-        return metadata.getLength();
+        return requireMetadata().getLength();
     }
 
     @JsonIgnore
     public Integer getPrecision() {
-        return metadata.getPrecision();
+        return requireMetadata().getPrecision();
     }
 
     @JsonIgnore
     public Integer getScale() {
-        return metadata.getScale();
+        return requireMetadata().getScale();
     }
 
     @JsonIgnore
     public boolean getIsMandatory() {
-        return metadata.getIsMandatory();
+        return requireMetadata().getIsMandatory();
     }
 
     @JsonIgnore
     public boolean getIsPrimaryKey() {
-        return metadata.getIsPrimaryKey();
+        return requireMetadata().getIsPrimaryKey();
     }
 
     @JsonIgnore
     public String getDDLDataType() {
-        return metadata.getDDLDataType();
+        return requireMetadata().getDDLDataType();
     }
 
     @JsonIgnore
     public String getFormat() {
-        return metadata.getFormat();
+        return requireMetadata().getFormat();
     }
 
     @JsonIgnore
     public String getScdBehavior() {
-        return metadata.getScdBehavior();
+        return requireMetadata().getScdBehavior();
     }
 
     @JsonIgnore
     public String getDescription() {
-        return metadata.getDescription();
+        return requireMetadata().getDescription();
     }
 
     public String getDefaultValue() {
-        return metadata != null ? metadata.getDefaultValue().toString() : null;
+        DatastoreAttribute resolved = getMetadata();
+        return resolved != null ? resolved.getDefaultValue() : null;
     }
 
 }

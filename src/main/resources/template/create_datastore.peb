@@ -10,12 +10,12 @@ RESOURCE '{{ stageDatastoreName }}'
   ,EFFECTIVE_DATE DATE NOT NULL
 {% for col in datastore.attributes %}
   ,{{ col.name | lower }}
-  {% if col.annotation("PROPERTIES") and col.annotation("PROPERTIES").parameters.CHAR_LENGTH_SEMANTIC == "CHAR" %}
+  {% if col.annotations() is not null and col.annotations().has("PROPERTIES") and col.annotations().get("PROPERTIES").attribute("CHAR_LENGTH_SEMANTIC") == "CHAR" %}
     VARCHAR2_CHAR({{ col.length }})
   {% else %}
     {{ col.ddlDataType }}
   {% endif %}
-  {% if col.mandatory %} NOT NULL{% endif %}
+  {% if col.isMandatory %} NOT NULL{% endif %}
 
 {% endfor %}
 );
@@ -23,4 +23,4 @@ RESOURCE '{{ stageDatastoreName }}'
 {# Pebble supports filters like Jinja2 #}
 -- Table: {{ xtDatastoreName | upper }}
 
--- Columns: {{ datastore.Attributes | length }}
+-- Columns: {{ datastore.attributes | length }}

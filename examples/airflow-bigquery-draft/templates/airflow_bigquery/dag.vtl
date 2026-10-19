@@ -1,0 +1,48 @@
+#parse("prepare")
+"""Generated Airflow 3 DAG; deployment and execution are external."""
+from pathlib import Path
+from airflow.sdk import DAG, Param
+from airflow.providers.google.cloud.operators.bigquery import BigQueryInsertJobOperator
+from pendulum import datetime
+
+with DAG(
+    dag_id="$dagId",
+    start_date=datetime(2026, 1, 1, tz="UTC"),
+    schedule=None,
+    catchup=False,
+    max_active_runs=1,
+    template_searchpath=[str(Path(__file__).resolve().parent / "sql")],
+    params={
+#foreach($entry in $parameters.entrySet())
+#if($entry.value == "DATE")
+        "$entry.key": Param(type="string", format="date"),
+#else
+        "$entry.key": Param(type="string", minLength=1, maxLength=128),
+#end
+#end
+    },
+    tags=["generated", "bigquery"],
+) as dag:
+    task = BigQueryInsertJobOperator(
+        task_id="$taskId",
+        gcp_conn_id="$airflow.attribute('CONNECTION_ID')",
+        project_id="$bigqueryProject",
+        location="$airflow.attribute('LOCATION')",
+        deferrable=False,
+        configuration={
+            "query": {
+                "query": "{% include '$sqlFile' %}",
+                "useLegacySql": False,
+                "parameterMode": "NAMED",
+                "queryParameters": [
+#foreach($entry in $parameters.entrySet())
+                    {
+                        "name": "$entry.key",
+                        "parameterType": {"type": "$entry.value"},
+                        "parameterValue": {"value": "{{ params.$entry.key }}"},
+                    },
+#end
+                ],
+            }
+        },
+    )

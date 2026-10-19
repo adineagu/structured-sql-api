@@ -1,0 +1,9 @@
+## Technical naming policy, shared by SQL and DAG generation templates.
+#set($bigqueryProject = "example-project")
+#set($namespaces = {
+    "stage": "${bigqueryProject}.stage",
+    "prep": "${bigqueryProject}.prep"
+})
+## Lowercase table basenames explicitly; quote the entire BigQuery table path.
+#set($tableNames = $ctx.tableNames('`{namespace}.{basename}`', $namespaces, true))
+#set($configured = $ctx.withSourceNames($tableNames).withTargetNames($tableNames))

@@ -40,6 +40,19 @@ public class InsertNode implements SemanticModel {
     private SemanticQueryBlock query;
     private List<SemanticAssignment> columns;
     private SemanticAnnotationSet annotations;
+    private String integrationType;
+    private String updateKey;
+    private Integer rejectLimit;
+    private String rejectLimitUnit;
+
+    public String getIntegrationType() { return integrationType; }
+    public void setIntegrationType(String value) { integrationType = value; }
+    public String getUpdateKey() { return updateKey; }
+    public void setUpdateKey(String value) { updateKey = value; }
+    public Integer getRejectLimit() { return rejectLimit; }
+    public void setRejectLimit(Integer value) { rejectLimit = value; }
+    public String getRejectLimitUnit() { return rejectLimitUnit; }
+    public void setRejectLimitUnit(String value) { rejectLimitUnit = value; }
 
     public InsertNode() {
     }
@@ -54,7 +67,8 @@ public class InsertNode implements SemanticModel {
         return target;
     }
 
-    @JsonProperty("ColumnList") 
+    /** Returns a collection copy with shared assignments, or null when there are no columns. */
+    @JsonProperty("ColumnList")
     public List<SemanticAssignment> getColumns() {
 
         if (!TUtil.isNullOrEmpty(columns)) {

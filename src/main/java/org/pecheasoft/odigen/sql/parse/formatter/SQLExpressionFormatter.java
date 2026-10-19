@@ -437,6 +437,7 @@ public class SQLExpressionFormatter extends BaseAlgebraVisitor<SQLExpressionForm
 
     @Override
     public String visitExistsPredicate(SQLExpressionFormatter.Context ctx, Stack<Expr> stack, ExistsPredicate expr) {
+        if (expr.getText() != null) return expr.getText();
         StringBuilder builder = new StringBuilder();
 
         builder
@@ -453,6 +454,7 @@ public class SQLExpressionFormatter extends BaseAlgebraVisitor<SQLExpressionForm
 
     @Override
     public String visitInPredicate(SQLExpressionFormatter.Context ctx, Stack<Expr> stack, InPredicate expr) {
+        if (expr.getText() != null) return expr.getText();
         StringBuilder builder = new StringBuilder();
 
         builder.append(visit(ctx, stack, expr.getLeft()));
@@ -467,6 +469,7 @@ public class SQLExpressionFormatter extends BaseAlgebraVisitor<SQLExpressionForm
 
     @Override
     public String visitQuantifiedComparisonPredicate(SQLExpressionFormatter.Context ctx, Stack<Expr> stack, QuantifiedComparisonPredicate expr) {
+        if (expr.getText() != null) return expr.getText();
         StringBuilder builder = new StringBuilder();
 
         builder.append(visit(ctx, stack, expr.getLeft()));
@@ -615,8 +618,8 @@ public class SQLExpressionFormatter extends BaseAlgebraVisitor<SQLExpressionForm
 
     @Override
     public String visitScalarSubQuery(SQLExpressionFormatter.Context ctx, Stack<Expr> stack, ScalarSubQuery expr) {
-        String therest = visit(ctx, stack, expr.getChild());
-        return "(SELECT ".concat(therest).concat(")");
+        if (expr.getText() != null) return expr.getText();
+        return "(" + SQLStatementFormatter.format(expr.getChild(), ctx.indent + 1).trim() + ")";
     }
 
     @Override

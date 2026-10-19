@@ -75,6 +75,8 @@ public final class CommandCompleter implements Completer {
                 } else if (line.wordIndex() == 3 && words.get(2).equals("to")) {
                     // apply <template> to → suggest object types
                     suggest(candidates, buffer, List.of("datastore", "mapping"));
+                } else if (line.wordIndex() == 5) {
+                    suggest(candidates, buffer, List.of("into"));
                 } else if (line.wordIndex() == 4) {
                     switch (words.get(3)) {
                         case "datastore" -> m.findAllDatastores("").forEach(o ->

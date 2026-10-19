@@ -1,0 +1,5 @@
+#parse("library.Query")
+#parse("naming")
+## A naming demonstration, not the MERGE strategy: render just the business SELECT.
+$ctx.validate($mapping)
+#Query($mapping.query $ctx)

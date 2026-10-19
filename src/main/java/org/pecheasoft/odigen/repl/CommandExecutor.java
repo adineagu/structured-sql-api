@@ -1,11 +1,10 @@
 package org.pecheasoft.odigen.repl;
 
 import org.pecheasoft.odigen.metadata.MetadataManager;
+import org.pecheasoft.odigen.metadata.MetadataResolver;
+import org.pecheasoft.odigen.render.TransformationContext;
 import org.pecheasoft.odigen.project.ProjectObject;
 import org.pecheasoft.odigen.sql.api.ast.SemanticModel;
-import org.pecheasoft.odigen.sql.api.transform.SemanticModelBuilder;
-import org.pecheasoft.odigen.sql.parse.SQLStatementParser;
-import org.pecheasoft.odigen.sql.parse.algebra.Expr;
 import org.pecheasoft.odigen.template.TemplateEngineFacade;
 import org.pecheasoft.odigen.template.TemplateParameter;
 
@@ -53,8 +52,9 @@ public final class CommandExecutor {
         sb.append("  show <datastore|mapping|template> <id>\n");
         sb.append("      Show the content of the specified object.\n");
         sb.append("\n");
-        sb.append("  apply <template_id> to <datastore|mapping> <id>\n");
-        sb.append("      Resolve a template using the AST of the target object.\n");
+        sb.append("  apply <template_id> to <datastore|mapping> <id> [into <output-directory>]\n");
+        sb.append("      Single-file templates print text. Packages write declared artifacts.\n");
+        sb.append("      Package default: <project>/generated/<template>/<source>/; into is project-relative.\n");
         sb.append("\n");
         sb.append("  clear\n");
         sb.append("      Clear the console.\n");
@@ -133,8 +133,8 @@ public final class CommandExecutor {
     // -------------------------
     private String handleApply(List<String> args) {
         // apply <template_id> to <object_type> <object_id>
-        if (args.size() != 4 || !args.get(1).equals("to")) {
-            return "Usage: apply <template_id> to <datastore|mapping> <id>";
+        if ((args.size() != 4 && args.size() != 6) || !args.get(1).equals("to") || args.size() == 6 && !args.get(4).equals("into")) {
+            return "Usage: apply <template_id> to <datastore|mapping> <id> [into <output-directory>]";
         }
 
         String templateId = args.get(0);
@@ -158,7 +158,18 @@ public final class CommandExecutor {
             return "Object not found: " + objectId;
         }
 
-        SemanticModel struct = parse(target.get().content());
+        if (org.pecheasoft.odigen.template.TemplatePackage.isPackage(template.get())) {
+            var directory = args.size() == 6 ? java.nio.file.Path.of(args.get(5))
+                    : java.nio.file.Path.of("generated", templateId.replace('.', '/'), objectId.replace('.', '/'));
+            if (!directory.isAbsolute()) directory = m.project().root().resolve(directory);
+            try {
+                new org.pecheasoft.odigen.render.CodeGeneratorService(m.project(), m).generatePackage(objectId, templateId, directory);
+                return "Generated template package " + templateId + " into " + directory.toAbsolutePath().normalize();
+            } catch (java.io.IOException ex) { throw new java.io.UncheckedIOException(ex); }
+        }
+        if (args.size() == 6) return "The into option requires a template package; use > for single-file templates";
+
+        SemanticModel struct = new MetadataResolver(m).parse(target.get(), MetadataResolver.Mode.STRICT);
 
         String parameterName = switch (objectType) {
             case "datastore" -> "datastore";
@@ -166,16 +177,9 @@ public final class CommandExecutor {
             default -> "unknown";
         };
 
-        String output = templateEngine.resolve(template.get(), List.of(TemplateParameter.of(parameterName, struct)));
+        String output = templateEngine.resolve(template.get(), List.of(TemplateParameter.of(parameterName, struct),
+                TemplateParameter.of("ctx", new TransformationContext())));
         return output;
-    }
-
-    private SemanticModel parse(String stmt) {
-        SQLStatementParser parser = new SQLStatementParser();
-        Expr expr = parser.parse(stmt);
-        SemanticModel struct = SemanticModelBuilder.getStructuredObject(expr);
-
-        return struct;
     }
 
 }

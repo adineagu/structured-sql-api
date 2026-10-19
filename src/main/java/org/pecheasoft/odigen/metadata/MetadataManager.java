@@ -19,6 +19,8 @@ public final class MetadataManager {
         this.project = project;
     }
 
+    public Project project() { return project; }
+
     // ------------------------------------------------------------
     // Generic API
     // ------------------------------------------------------------
@@ -54,6 +56,19 @@ public final class MetadataManager {
         return find(ObjectType.DATASTORE, qualifiedName);
     }
 
+    /** Resolve a SQL reference by its full project path, independent of lexer casing. */
+    public Optional<ProjectObject> findDatastoreReference(String qualifiedName) {
+        List<ProjectObjectId> matches = project.getObjects().stream()
+                .filter(o -> o.type() == ObjectType.DATASTORE
+                        && o.qualifiedName().equalsIgnoreCase(qualifiedName))
+                .toList();
+        if (matches.size() > 1) {
+            throw new IllegalArgumentException("Ambiguous datastore reference '" + qualifiedName
+                    + "': " + matches.stream().map(o -> o.filePath().toString()).toList());
+        }
+        return matches.stream().findFirst().map(this::load);
+    }
+
     public List<ProjectObject> findAllDatastores(String prefix) {
         return findAll(ObjectType.DATASTORE, prefix);
     }
@@ -68,6 +83,18 @@ public final class MetadataManager {
 
     public Optional<ProjectObject> findTemplate(String qualifiedName) {
         return find(ObjectType.TEMPLATE, qualifiedName);
+    }
+
+    /** Explicit access to private package resources, not included in template listings. */
+    public Optional<ProjectObject> findTemplateResource(String id) {
+        for (ProjectObject object : findAllTemplates("")) {
+            String prefix = object.id().qualifiedName() + "/";
+            if (org.pecheasoft.odigen.template.TemplatePackage.isPackage(object) && id.startsWith(prefix)) {
+                var pkg = new org.pecheasoft.odigen.template.TemplatePackage(object);
+                return Optional.of(pkg.resource(id.substring(prefix.length())));
+            }
+        }
+        return Optional.empty();
     }
 
     public List<ProjectObject> findAllTemplates(String prefix) {

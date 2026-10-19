@@ -6,6 +6,9 @@
 package org.pecheasoft.odigen.sql.api.transform;
 
 import java.util.Stack;
+import java.util.List;
+import org.pecheasoft.odigen.sql.api.ast.SemanticSetQueryBlock;
+import org.pecheasoft.odigen.sql.api.ast.impl.MultiInsertTableNode;
 
 import org.pecheasoft.odigen.sql.api.ast.SemanticModel;
 import org.pecheasoft.odigen.sql.api.ast.SemanticAssignment;
@@ -19,7 +22,6 @@ import org.pecheasoft.odigen.sql.api.ast.impl.DatastoreReferenceNode;
 import org.pecheasoft.odigen.sql.api.ast.impl.InsertNode;
 import org.pecheasoft.odigen.sql.api.ast.impl.JoinNode;
 import org.pecheasoft.odigen.sql.api.ast.impl.SelectItem;
-import org.pecheasoft.odigen.sql.util.TUtil;
 
 
 /**
@@ -31,13 +33,19 @@ public class BaseSemanticModelVisitor<CONTEXT, RESULT> implements SemanticModelV
     public RESULT visit(CONTEXT ctx, Stack<SemanticModel> stack, SemanticModel expr) {
         RESULT current;
         
-        switch (expr.getClass().getSimpleName()) {
-            case "InsertStatement" -> current = visitInsertStatement(ctx, stack, (InsertNode) expr);
-            case "Query" -> current = visitQuery(ctx, stack, (SemanticSimpleQueryBlock) expr);
-            case "JoinTable" -> current = visitJoinTable(ctx, stack, (JoinNode) expr);
-            case "DatastoreReference" -> current = visitDatastoreReference(ctx, stack, (DatastoreReferenceNode) expr);
-            case "SubQuery" -> current = visitSubQuery(ctx, stack, (SemanticNestedQueryBlock) expr);
-            case "FilterSubQuery" -> current = visitFilterSubQuery(ctx, stack, (SemanticNestedQueryFilter) expr);
+        switch (expr) {
+            case InsertNode node -> current = visitInsertStatement(ctx, stack, node);
+            case SemanticNestedQueryBlock node -> current = visitSubQuery(ctx, stack, node);
+            case SemanticSimpleQueryBlock node -> current = visitQuery(ctx, stack, node);
+            case SemanticSetQueryBlock node -> current = visitSetQuery(ctx, stack, node);
+            case JoinNode node -> current = visitJoinTable(ctx, stack, node);
+            case DatastoreReferenceNode node -> current = visitDatastoreReference(ctx, stack, node);
+            case SemanticNestedQueryFilter node -> current = visitFilterSubQuery(ctx, stack, node);
+            case SemanticAssignment node -> current = visitTargetAttribute(ctx, stack, node);
+            case SelectItem node -> current = visitSelectItem(ctx, stack, node);
+            case MultiInsertTableNode node -> current = visitMultiInsertTarget(ctx, stack, node);
+            case SemanticExpression node -> current = visitExpression(ctx, stack, node);
+            case SemanticRelation node -> current = visitRelation(ctx, stack, node);
             default -> throw new RuntimeException(String.format("Object of type \"%s\" not handled yet!", expr.getClass().getSimpleName()));
         }
         
@@ -47,94 +55,122 @@ public class BaseSemanticModelVisitor<CONTEXT, RESULT> implements SemanticModelV
     @Override
     public RESULT visitInsertStatement(CONTEXT ctx, Stack<SemanticModel> stack, InsertNode expr) {
         stack.push(expr);
-        RESULT result = visit(ctx, stack, expr.getQuery());
-        stack.pop();
-        
-        return result;
+        try {
+            if (expr.getTarget() != null) visit(ctx, stack, expr.getTarget());
+            visitAll(ctx, stack, expr.getColumns());
+            visitAll(ctx, stack, expr.getMultiInsertTargets());
+            return expr.getQuery() == null ? null : visit(ctx, stack, expr.getQuery());
+        } finally {
+            stack.pop();
+        }
     }
 
     @Override
     public RESULT visitTargetAttribute(CONTEXT ctx, Stack<SemanticModel> stack, SemanticAssignment expr) {
-        throw new UnsupportedOperationException("Not supported yet.");
+        // The linked SelectItem belongs to the query. Do not traverse the back-reference.
+        return null;
     }
 
     @Override
     public RESULT visitSelectItem(CONTEXT ctx, Stack<SemanticModel> stack, SelectItem expr) {
-        throw new UnsupportedOperationException("Not supported yet.");
+        stack.push(expr);
+        try {
+            return expr.getExpression() == null ? null : visit(ctx, stack, expr.getExpression());
+        } finally {
+            stack.pop();
+        }
     }
 
     @Override
     public RESULT visitQuery(CONTEXT ctx, Stack<SemanticModel> stack, SemanticSimpleQueryBlock expr) {
-        RESULT result = null;
-        
         stack.push(expr);
-
-        if (!TUtil.isNullOrEmpty(expr.getFromList())) {
-            for (SemanticModel relation : expr.getFromList()) {
-                result = visit(ctx, stack, relation);
-            }
+        try {
+            visitAll(ctx, stack, expr.getWithList());
+            visitAll(ctx, stack, expr.getSelectList());
+            RESULT result = visitAll(ctx, stack, expr.getFromList());
+            visitAll(ctx, stack, expr.getWhereList());
+            visitAll(ctx, stack, expr.getGroupByList());
+            visitAll(ctx, stack, expr.getHavingList());
+            visitAll(ctx, stack, expr.getOrderByList());
+            if (expr.getLimit() != null) visit(ctx, stack, expr.getLimit());
+            return result;
+        } finally {
+            stack.pop();
         }
-        stack.pop();
-        
+    }
+
+    public RESULT visitSetQuery(CONTEXT ctx, Stack<SemanticModel> stack, SemanticSetQueryBlock expr) {
+        stack.push(expr);
+        try {
+            RESULT result = null;
+            for (SemanticSetQueryBlock.Dataset dataset : expr.getDatasets()) {
+                result = visit(ctx, stack, dataset.getDataset());
+            }
+            return result;
+        } finally {
+            stack.pop();
+        }
+    }
+
+    public RESULT visitMultiInsertTarget(CONTEXT ctx, Stack<SemanticModel> stack, MultiInsertTableNode expr) {
+        stack.push(expr);
+        try {
+            if (expr.getTarget() != null) visit(ctx, stack, expr.getTarget());
+            return visitAll(ctx, stack, expr.getSelectList());
+        } finally {
+            stack.pop();
+        }
+    }
+
+    private RESULT visitAll(CONTEXT ctx, Stack<SemanticModel> stack, List<? extends SemanticModel> nodes) {
+        RESULT result = null;
+        if (nodes != null) {
+            for (SemanticModel node : nodes) result = visit(ctx, stack, node);
+        }
         return result;
     }
 
     @Override
     public RESULT visitRelation(CONTEXT ctx, Stack<SemanticModel> stack, SemanticRelation expr) {
-        throw new UnsupportedOperationException("Not supported yet.");
+        return null;
     }
 
     @Override
     public RESULT visitJoinTable(CONTEXT ctx, Stack<SemanticModel> stack, JoinNode expr) {
         RESULT result = null;
-        
         stack.push(expr);
-        
-        if (expr.getLeftJoin() != null) {
-            result = visit(ctx, stack, expr.getLeftJoin());
+        try {
+            if (expr.getLeftJoin() != null) result = visit(ctx, stack, expr.getLeftJoin());
+            if (expr.getLeftQuery() != null) result = visit(ctx, stack, expr.getLeftQuery());
+            if (expr.getLeftTable() != null) result = visit(ctx, stack, expr.getLeftTable());
+            if (expr.getRightJoin() != null) result = visit(ctx, stack, expr.getRightJoin());
+            if (expr.getRightQuery() != null) result = visit(ctx, stack, expr.getRightQuery());
+            if (expr.getRightTable() != null) result = visit(ctx, stack, expr.getRightTable());
+            if (expr.getJoinExpression() != null) visit(ctx, stack, expr.getJoinExpression());
+            return result;
+        } finally {
+            stack.pop();
         }
-        if (expr.getLeftQuery() != null) {
-            result = visit(ctx, stack, expr.getLeftQuery());
-        }
-        if (expr.getLeftTable()!= null) {
-            result = visit(ctx, stack, expr.getLeftTable());
-        }
-        
-        if (expr.getRightJoin() != null) {
-            result = visit(ctx, stack, expr.getRightJoin());
-        }
-        if (expr.getRightQuery() != null) {
-            result = visit(ctx, stack, expr.getRightQuery());
-        }
-        if (expr.getRightTable()!= null) {
-            result = visit(ctx, stack, expr.getRightTable());
-        }
-        
-        stack.pop();
-        
-        return result;
     }
 
     @Override
     public RESULT visitSubQuery(CONTEXT ctx, Stack<SemanticModel> stack, SemanticNestedQueryBlock expr) {
-        RESULT result;
-        
         stack.push(expr);
-        result = visit(ctx, stack, expr.getQuery());
-        stack.pop();
-        
-        return result;
+        try {
+            return visit(ctx, stack, expr.getQuery());
+        } finally {
+            stack.pop();
+        }
     }
 
     @Override
     public RESULT visitFilterSubQuery(CONTEXT ctx, Stack<SemanticModel> stack, SemanticNestedQueryFilter expr) {
-        RESULT result;
-        
         stack.push(expr);
-        result = visit(ctx, stack, expr.getSubQuery());
-        stack.pop();
-        
-        return result;
+        try {
+            return expr.getSubQuery() == null ? null : visit(ctx, stack, expr.getSubQuery());
+        } finally {
+            stack.pop();
+        }
     }
 
     @Override
@@ -144,7 +180,12 @@ public class BaseSemanticModelVisitor<CONTEXT, RESULT> implements SemanticModelV
 
     @Override
     public RESULT visitExpression(CONTEXT ctx, Stack<SemanticModel> stack, SemanticExpression expr) {
-        return null;
+        stack.push(expr);
+        try {
+            return visitAll(ctx, stack, expr.getTableReferences());
+        } finally {
+            stack.pop();
+        }
     }
 
 }

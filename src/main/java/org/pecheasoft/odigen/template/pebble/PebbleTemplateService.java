@@ -24,6 +24,8 @@ public final class PebbleTemplateService implements TemplateEngineFacade {
     private void initialize() {
         this.engine = new PebbleEngine.Builder()
             .loader(new MapLoader(templateCache))
+            .cacheActive(false)
+            .autoEscaping(false)
             .build();
     }
 

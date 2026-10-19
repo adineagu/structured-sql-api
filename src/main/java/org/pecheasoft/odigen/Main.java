@@ -110,7 +110,12 @@ public class Main {
     }
 
     private String evaluateTemplate(String templateName, String templateBody, SemanticModel datastore, TemplateEngineType engineType) {
-        return templateBody;
+        var template = new org.pecheasoft.odigen.project.ProjectObject(
+                new org.pecheasoft.odigen.project.ProjectObjectId(
+                        org.pecheasoft.odigen.project.ObjectType.TEMPLATE, templateName, java.nio.file.Path.of(templateName)),
+                templateBody);
+        return org.pecheasoft.odigen.template.TemplateEngineFacadeFactory.create(engineType)
+                .resolve(template, java.util.List.of(org.pecheasoft.odigen.template.TemplateParameter.of("datastore", datastore)));
     }
     
 

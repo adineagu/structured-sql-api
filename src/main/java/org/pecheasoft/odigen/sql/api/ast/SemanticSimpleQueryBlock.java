@@ -62,6 +62,7 @@ public class SemanticSimpleQueryBlock implements SemanticQueryBlock {
     private String havingText;
     private List<SemanticExpression> orderByExprList;
     private String orderByText;
+    private SemanticExpression limit;
     private SemanticAnnotationSet annotations;
     
     public SemanticSimpleQueryBlock() {
@@ -176,6 +177,15 @@ public class SemanticSimpleQueryBlock implements SemanticQueryBlock {
         return pivotText;
     }
 
+    /** Row-count expression from the specification; templates choose target syntax. */
+    public SemanticExpression getLimit() {
+        return limit;
+    }
+
+    public void setLimit(SemanticExpression limit) {
+        this.limit = limit;
+    }
+
     public void setPivotText(String pivotText) {
         this.pivotText = pivotText;
     }
@@ -256,12 +266,14 @@ Query {
         newQry.setOrderByList(orderByExprList);
         newQry.setOrderByText(orderByText);
         newQry.setPivotText(pivotText);
+        newQry.setLimit(limit);
         newQry.setSelectList(selectList);
         newQry.setWhereList(whereExprList);
 
         return newQry;
     }
 
+    /** Copies the query shell, sharing child lists and annotations with this query. */
     public SemanticSimpleQueryBlock shallowCopy() {
         SemanticSimpleQueryBlock newQry = new SemanticSimpleQueryBlock(this.qryName);
 
@@ -276,6 +288,7 @@ Query {
         newQry.setOrderByList(orderByExprList);
         newQry.setOrderByText(orderByText);
         newQry.setPivotText(pivotText);
+        newQry.setLimit(limit);
         newQry.setSelectList(selectList);
         newQry.setWhereList(whereExprList);
   

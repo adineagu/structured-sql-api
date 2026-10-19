@@ -48,7 +48,16 @@ public final class ProjectScanner {
         List<ProjectObjectId> result = new ArrayList<>();
 
         try (var stream = Files.walk(root)) {
-            stream.filter(Files::isRegularFile).forEach(path -> {
+            var files = stream.filter(Files::isRegularFile).sorted().toList();
+            var packages = files.stream().filter(p -> p.getFileName().toString().equals("template.yml")).toList();
+            for (Path descriptor : packages) {
+                if (descriptor.getParent().equals(root)) throw new IllegalArgumentException("Template packages require a subfolder: " + descriptor);
+                if (packages.stream().anyMatch(other -> !other.equals(descriptor) && descriptor.startsWith(other.getParent())))
+                    throw new IllegalArgumentException("Nested template packages are not supported: " + descriptor);
+                String name = root.relativize(descriptor.getParent()).toString().replace(File.separatorChar, '.');
+                result.add(new ProjectObjectId(ObjectType.TEMPLATE, name, descriptor));
+            }
+            files.stream().filter(path -> packages.stream().noneMatch(p -> path.startsWith(p.getParent()))).forEach(path -> {
                 String filename = path.getFileName().toString();
 
                 TemplateEngineType detected = TemplateExtensions.detect(filename);
@@ -58,6 +67,8 @@ public final class ProjectScanner {
                     result.add(new ProjectObjectId(ObjectType.TEMPLATE, qname, path));
                 }
             });
+            if (result.stream().map(ProjectObjectId::qualifiedName).distinct().count() != result.size())
+                throw new IllegalArgumentException("Duplicate template ID under " + root);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

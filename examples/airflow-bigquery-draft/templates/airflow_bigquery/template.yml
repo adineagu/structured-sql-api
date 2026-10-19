@@ -1,0 +1,6 @@
+engine: velocity
+artifacts:
+  - template: merge.vtl
+    output: "sql/{name}.sql"
+  - template: dag.vtl
+    output: "{name}.py"

@@ -1,0 +1,17 @@
+#parse("prepare")
+-- Generated BigQuery MERGE; execution belongs to the target platform.
+MERGE $ctx.targetName($mapping.target) AS T
+USING (
+#Query($mapping.query $ctx)
+) AS S
+ON #foreach($key in $keys)#if($foreach.count > 1) AND #end T.$key = S.$key#end
+
+WHEN MATCHED THEN
+    UPDATE SET
+#foreach($entry in $updates.entrySet())
+        $entry.key = $entry.value#if($foreach.hasNext),#end
+
+#end
+WHEN NOT MATCHED THEN
+    INSERT (#foreach($entry in $inserts.entrySet())#if($foreach.count > 1), #end$entry.key#end)
+    VALUES (#foreach($entry in $inserts.entrySet())#if($foreach.count > 1), #end$entry.value#end);

@@ -19,6 +19,19 @@ public class MultiInsertTableNode implements SemanticModel {
     private SemanticAnnotationSet annotations;
     private String condition;    
     private List<SelectItem> selectList;
+    private String integrationType;
+    private String updateKey;
+    private Integer rejectLimit;
+    private String rejectLimitUnit;
+
+    public String getIntegrationType() { return integrationType; }
+    public void setIntegrationType(String value) { integrationType = value; }
+    public String getUpdateKey() { return updateKey; }
+    public void setUpdateKey(String value) { updateKey = value; }
+    public Integer getRejectLimit() { return rejectLimit; }
+    public void setRejectLimit(Integer value) { rejectLimit = value; }
+    public String getRejectLimitUnit() { return rejectLimitUnit; }
+    public void setRejectLimitUnit(String value) { rejectLimitUnit = value; }
 
     public DatastoreReferenceNode getTarget() {
         return target;
