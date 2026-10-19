@@ -166,6 +166,30 @@ ON T.EMPLOYEE_ID = S.EMPLOYEE_ID</code></pre>
 <p>Template packages can generate multiple files and use Velocity, Pebble, FreeMarker, or Jinjava. The public repository also includes structured SQL rendering and a text-generation example for an ODI mapping strategy. The separate ODI SDK extension supports generation and deployment of native ODI objects.</p>
 <!-- /wp:paragraph -->
 
+<!-- wp:heading {"anchor":"ai-assisted-development"} -->
+<h2 class="wp-block-heading" id="ai-assisted-development">Developing SQL Morph with AI coding agents</h2>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>I develop SQL Morph with AI coding agents, using application feedback to improve both the framework and the guidance that agents need to use it.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>In a practical experiment, a separate Codex agent worked in an application project <strong>without access to SQL Morph’s implementation source code</strong>. Its task was to turn Excel datastore descriptions into SQL specifications, add meaningful annotations, develop Oracle cleansing and constraint-validation templates, and generate the resulting code. The experiment succeeded with interactive guidance, revealing where the documentation needed to be clearer.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>That feedback led to a clearer public-API workflow, executable training examples, and a stronger SQL-first modelling rule: declare structure and constraints in SQL, then use annotations for additional template policy. It also exposed a runtime bug in CHECK-constraint metadata construction. We fixed the bug and added regression tests for CHECKs with and without annotations.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>The aim is to make each application experiment improve the next agent’s starting point. The Oracle training example is checked against expected generated artifacts; execution in an Oracle database remains a separate validation step.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p><a href="https://github.com/adineagu/structured-sql-api/blob/HEAD/AGENTS.md">Read the coding-agent guide</a> · <a href="https://github.com/adineagu/structured-sql-api/blob/HEAD/docs/agents/workflow.md">Explore the Oracle training workflow</a></p>
+<!-- /wp:paragraph -->
+
 <!-- wp:heading -->
 <h2 class="wp-block-heading">Try it locally</h2>
 <!-- /wp:heading -->

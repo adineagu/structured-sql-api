@@ -54,6 +54,30 @@ FreeMarker, or Jinjava.
 
 The repository also includes structured SQL rendering and an ODI mapping strategy.
 
+## Developing SQL Morph with AI coding agents
+
+I develop SQL Morph with AI coding agents, using application feedback to improve
+both the framework and the guidance that agents need to use it.
+
+In a practical experiment, a separate Codex agent worked in an application project
+**without access to SQL Morph's implementation source code**. It turned Excel
+datastore descriptions into SQL specifications, added annotations, developed Oracle
+cleansing and constraint-validation templates, and generated code. The experiment
+succeeded with interactive guidance, revealing gaps in the documentation.
+
+That feedback led to a clearer public-API workflow, executable training examples,
+and a stronger SQL-first modelling rule: declare structure and constraints in SQL,
+then use annotations for additional template policy. It also exposed a runtime
+bug in CHECK-constraint metadata construction. We fixed the bug and added
+regression tests for CHECKs with and without annotations.
+
+The aim is to make each application experiment improve the next agent's starting
+point. The Oracle training example is checked against expected generated artifacts;
+execution in an Oracle database remains a separate validation step.
+
+[Read the coding-agent guide](https://github.com/adineagu/structured-sql-api/blob/HEAD/AGENTS.md)
+ · [Explore the Oracle training workflow](https://github.com/adineagu/structured-sql-api/blob/HEAD/docs/agents/workflow.md)
+
 ## Try it from the repository
 
 With JDK 21 and Maven, run this from a local checkout:

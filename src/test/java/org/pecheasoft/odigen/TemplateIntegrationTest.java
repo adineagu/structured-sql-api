@@ -37,11 +37,15 @@ public class TemplateIntegrationTest {
     }
 
     @Test
-    public void projectDatastoreTemplatePreservesCharacterSemanticsAndMandatoryColumns() throws Exception {
+    public void datastoreTemplateFixturePreservesCharacterSemanticsAndMandatoryColumns() throws Exception {
         Datastore datastore = (Datastore) SemanticModelBuilder.getStructuredObject(
                 new SQLStatementParser().parseSingleStatementScript(
                         "CREATE TABLE demo (@properties(char_length_semantic=\"CHAR\") name VARCHAR2(20) NOT NULL)"));
-        String body = Files.readString(Path.of("project/templates/datastore/create_datastore.peb"));
+        String body;
+        try (var input = java.util.Objects.requireNonNull(getClass().getResourceAsStream(
+                "/fixtures/templates/create_datastore.peb"))) {
+            body = new String(input.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8);
+        }
         String output = new PebbleTemplateService().resolve(template("create", body),
                 List.of(TemplateParameter.of("datastore", datastore)));
         assertTrue(output, output.contains("VARCHAR2_CHAR(20)"));

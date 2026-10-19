@@ -1,6 +1,6 @@
 {% set xtDatastoreName = "XT_" ~ datastore.name ~ "_V" %}
 {% set stageDatastoreName = "ST_" ~ datastore.name %}
-CREATE OR REPLACE DATASTORE DWH_STAGE_ARCHIVE.{{ stageDatastoreName }}
+CREATE OR REPLACE DATASTORE TEST_STAGE.{{ stageDatastoreName }}
 
 ALIAS {{ stageDatastoreName }}
 

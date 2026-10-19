@@ -27,14 +27,15 @@ import org.pecheasoft.odigen.sql.parse.formatter.*;
 import org.pecheasoft.odigen.sql.util.*;
 import org.pecheasoft.odigen.sql.util.annotation.*;
 import org.pecheasoft.odigen.sql.util.graph.*;
-import org.pecheasoft.odigen.template.freemaker.*;
+import org.pecheasoft.odigen.template.freemarker.*;
 import org.pecheasoft.odigen.template.jinjava.*;
 import org.pecheasoft.odigen.template.jte.*;
 import org.pecheasoft.odigen.template.pebble.*;
 import org.pecheasoft.odigen.template.velocity.*;
 import org.pecheasoft.odigen.project.Project;
 
-Path root = Path.of("project");
+String projectDirectory = Objects.requireNonNull(System.getProperty("sqlmorph.project"), "Supply -R-Dsqlmorph.project=<project-directory> or use bin/sqlmorph-shell.bat <project-directory>");
+Path root = Path.of(projectDirectory);
 Project project = new Project(root);
 MetadataManager metadata = new MetadataManager(project);
 CodeGeneratorService codegen = new CodeGeneratorService(project, metadata);
