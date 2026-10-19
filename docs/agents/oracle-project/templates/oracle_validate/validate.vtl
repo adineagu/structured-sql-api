@@ -1,0 +1,31 @@
+#parse("prepare.vtl")
+SELECT 'TOTAL' AS RULE_NAME, 'INFO' AS SEVERITY, COUNT(*) AS VIOLATIONS FROM $cleanView
+#foreach($column in $datastore.attributes)
+#if($column.isMandatory)
+UNION ALL
+SELECT 'NN_$column.name', 'ERROR', COUNT(*) FROM $cleanView WHERE $column.name IS NULL
+#end
+#end
+#foreach($key in $datastore.keys)
+#set($severity = "ERROR")
+#if($key.annotations() && $key.annotations().has("VALIDATION"))
+#set($severity = $key.annotations().get("VALIDATION").attribute("SEVERITY"))
+#end
+UNION ALL
+SELECT '$key.name', '$severity', COUNT(*) FROM (
+SELECT #foreach($name in $key.keyColumns)#if($foreach.count > 1), #end$name#end
+FROM $cleanView
+WHERE #foreach($name in $key.keyColumns)#if($foreach.count > 1) AND #end$name IS NOT NULL#end
+GROUP BY #foreach($name in $key.keyColumns)#if($foreach.count > 1), #end$name#end
+HAVING COUNT(*) > 1
+)
+#end
+#foreach($condition in $datastore.conditions)
+#set($severity = "ERROR")
+#if($condition.annotations() && $condition.annotations().has("VALIDATION"))
+#set($severity = $condition.annotations().get("VALIDATION").attribute("SEVERITY"))
+#end
+UNION ALL
+SELECT '$condition.name', '$severity', COUNT(*) FROM $cleanView WHERE NOT ($condition.condition)
+#end
+;

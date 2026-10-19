@@ -1,0 +1,6 @@
+engine: velocity
+artifacts:
+  - template: main.vtl
+    output: "sql/{name}.sql"
+  - template: contract.vtl
+    output: "{name}.txt"

@@ -1,0 +1,11 @@
+#parse("prepare.vtl")
+mode=$load.attribute("MODE")
+target=$ctx.targetName($mapping.target)
+#foreach($column in $mapping.columns)
+column=$column.name,type=$column.metadata.getDDLDataType(),mandatory=$column.metadata.isMandatory
+#end
+#foreach($key in $mapping.target.datastore.keys)
+#if($key.isPrimaryKey())
+primary-key=$key.keyColumns
+#end
+#end
