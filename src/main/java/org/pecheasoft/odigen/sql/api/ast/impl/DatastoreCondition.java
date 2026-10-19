@@ -30,7 +30,8 @@ public class DatastoreCondition extends DatastoreConstraint {
                 key.isActive(),
                 key.getMessage(),
                 new SemanticAnnotationSet(
-                    AnnotationTransformer.toSemanticList(List.copyOf(key.getAnnotations()))
+                    AnnotationTransformer.toSemanticList(key.getAnnotations() == null
+                            ? List.of() : List.copyOf(key.getAnnotations()))
                 )
         );   
         this.conditionExpression = key.getConditionText();

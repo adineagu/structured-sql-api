@@ -1,0 +1,4 @@
+#parse("prepare.vtl")
+## This model is parsed separately for this artifact; consume our root policy tag.
+$ctx.removeAnnotation($mapping, "LOAD")
+#Render($mapping $ctx)

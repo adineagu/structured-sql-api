@@ -1,0 +1,5 @@
+mode=APPEND
+target=REPORTING.EMPLOYEES
+column=EMPLOYEE_ID,type=BIGINT,mandatory=true
+column=SALARY,type=DECIMAL(12,2),mandatory=false
+primary-key=[EMPLOYEE_ID]

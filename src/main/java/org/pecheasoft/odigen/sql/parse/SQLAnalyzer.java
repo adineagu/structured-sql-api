@@ -2739,6 +2739,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
             Expr condition = visitSearch_condition(checkCtx.search_condition());
             TableCheckConstraint checkConstraint = new TableCheckConstraint(constraint, condition);
             checkConstraint.setQualText(getRuleText(ctx.datastore_check().search_condition()));
+            checkConstraint.setAnnotations(getAnnotations(ctx.annotation()));
             
             return checkConstraint;
         } else {

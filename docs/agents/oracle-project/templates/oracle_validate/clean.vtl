@@ -1,0 +1,12 @@
+#parse("prepare.vtl")
+CREATE OR REPLACE VIEW $cleanView AS
+SELECT
+#foreach($column in $datastore.attributes)
+#if($foreach.count > 1),#end
+#if($column.annotations() && $column.annotations().has("CLEANSE"))
+TRIM(e.$column.name) AS $column.name
+#else
+e.$column.name AS $column.name
+#end
+#end
+FROM $datastore.name e;

@@ -1,5 +1,10 @@
 # Structured SQL API
 
+Licensed under the [GNU General Public License, version 3 only](LICENSE)
+(`GPL-3.0-only`). See [NOTICE](NOTICE) for attribution information.
+Third-party source files and dependencies retain their own licenses and notices,
+including the [Apache License 2.0](LICENSES/Apache-2.0.txt).
+
 **Your SQL logic. Your platform rules. Generated together.**
 
 Structured SQL API is a Java framework for turning SQL specifications and datastore
@@ -93,6 +98,7 @@ Imports: `java.nio.file.Path`, `org.pecheasoft.odigen.project.Project`,
 
 ## Explore
 
+- [Guide and complete training example for AI coding agents](AGENTS.md)
 - [Showcase: one mapping to SQL and an Airflow DAG](docs/showcase.md)
 - [Template engines, metadata resolution, and generation API](TEMPLATE_ENGINES.md)
 - [Structured SQL rendering and naming](examples/ast-rendering/README.md)

@@ -1,0 +1,202 @@
+<!-- wp:heading {"level":1} -->
+<h1 class="wp-block-heading">SQL Morph</h1>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p><strong>Your SQL logic. Your platform rules. Generated together.</strong></p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>Turn SQL specifications and datastore metadata into implementation artifacts with reusable templates. Keep transformation logic readable, centralize naming and integration conventions, and generate SQL and supporting files from the same specification.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:buttons -->
+<div class="wp-block-buttons"><!-- wp:button -->
+<div class="wp-block-button"><a class="wp-block-button__link wp-element-button" href="#example">See an example</a></div>
+<!-- /wp:button -->
+
+<!-- wp:button {"className":"is-style-outline"} -->
+<div class="wp-block-button is-style-outline"><a class="wp-block-button__link wp-element-button" href="https://github.com/adineagu/structured-sql-api">Explore on GitHub</a></div>
+<!-- /wp:button --></div>
+<!-- /wp:buttons -->
+
+<!-- wp:heading -->
+<h2 class="wp-block-heading">Write the transformation. Reuse the implementation rules.</h2>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>Data pipelines repeat physical naming rules, technical fields, upsert conventions, and orchestration setup. When those rules are copied into every pipeline, changing a convention means maintaining many files.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>SQL Morph gives those rules a reusable home. Its Java framework, Structured SQL API, parses SQL specifications into a structured model, resolves datastore metadata, and exposes that model to templates you control.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading -->
+<h2 class="wp-block-heading">Beyond code generation: generate and deploy native ODI objects</h2>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>Generating a data pipeline means understanding the platform it will run on: its objects, relationships, and implementation conventions. SQL Morph also has a separate extension that uses the <strong>Oracle Data Integrator SDK to generate mappings, datastores, packages, and scenarios</strong>. The extension can also be used to deploy these objects.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>This brings reusable implementation rules into the creation and deployment of native ODI objects, supporting automation across a broader part of the integration delivery process.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>The ODI SDK extension is a separate component and is not currently included in the public GitHub repository. Building and running it requires the ODI SDK and its dependencies.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p><strong>Interested in automating ODI object generation and deployment?</strong> <a href="mailto:adi.neagu@gmail.com?subject=SQL%20Morph%20ODI%20extension">Contact me at adi.neagu@gmail.com</a> to discuss the extension and your ODI environment.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading -->
+<h2 class="wp-block-heading">Applied in banking. Across technology generations.</h2>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>SQL Morph has supported large-scale data integration projects at a leading Austrian bank and a major Romanian bank, addressing platform migration and ETL development automation across large numbers of jobs.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading {"level":3} -->
+<h3 class="wp-block-heading">A leading Austrian bank — Supporting successive migrations</h3>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>The tool was first used to support migration from a DB2 and COBOL mainframe implementation to Oracle and Oracle Data Integrator (ODI). It was subsequently applied to Oracle-to-Hadoop data replication and analytics, and later to an Oracle-to-BigQuery migration. Reusable generation rules helped apply consistent implementation patterns across large numbers of jobs.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading {"level":3} -->
+<h3 class="wp-block-heading">A major Romanian bank — Modernizing ETL development</h3>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>The focus was on modernizing and automating ETL development, using reusable generation templates to capture shared implementation patterns and support a repeatable development process.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading {"anchor":"example"} -->
+<h2 class="wp-block-heading" id="example">One employee mapping. Two generated artifacts.</h2>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>Start with the business assignments between two logical tables:</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:code -->
+<pre class="wp-block-code"><code>INSERT INTO prep.employees (
+    EMPLOYEE_ID, DEPARTMENT_ID, SALARY
+)
+SELECT
+    e.EMPLOYEE_ID AS EMPLOYEE_ID,
+    e.DEPARTMENT_ID AS DEPARTMENT_ID,
+    e.SALARY AS SALARY
+FROM stage.employees e</code></pre>
+<!-- /wp:code -->
+
+<!-- wp:paragraph -->
+<p>This excerpt shows the business SQL. The complete specification also includes annotations for MERGE mode and Airflow settings. Datastore definitions supply columns, types, and the target primary key.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:code -->
+<pre class="wp-block-code"><code>SQL mapping + datastore metadata
+                |
+     Airflow/BigQuery template package
+                |
+       +--------+--------+
+       |                 |
+  MERGE script       Airflow DAG
+     (.sql)             (.py)</code></pre>
+<!-- /wp:code -->
+
+<!-- wp:heading {"level":3} -->
+<h3 class="wp-block-heading">BigQuery MERGE SQL</h3>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>The target primary key drives matching. A shared template policy supplies technical-field values and determines which fields insert or update. The generated script begins:</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:code -->
+<pre class="wp-block-code"><code>MERGE `example-project.prep.employees` AS T
+USING (
+    SELECT
+        e.EMPLOYEE_ID AS EMPLOYEE_ID,
+        e.DEPARTMENT_ID AS DEPARTMENT_ID,
+        e.SALARY AS SALARY
+    FROM `example-project.stage.employees` e
+) AS S
+ON T.EMPLOYEE_ID = S.EMPLOYEE_ID</code></pre>
+<!-- /wp:code -->
+
+<!-- wp:paragraph -->
+<p>The full script adds update and insert branches, with typed parameters for the load ID and effective date.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading {"level":3} -->
+<h3 class="wp-block-heading">An Airflow DAG</h3>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>The same package generates a Python DAG that submits the SQL with typed BigQuery parameter bindings. Both files come from one mapping and shared template policy.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p><a href="https://github.com/adineagu/structured-sql-api/blob/HEAD/docs/showcase.md">Follow the complete example: inputs, templates, commands, and reference outputs →</a></p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading -->
+<h2 class="wp-block-heading">Keep each rule where it belongs</h2>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p><strong>SQL defines the business assignments.</strong> Keep the transformation visible in a readable specification.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p><strong>Metadata supplies structure and keys.</strong> Resolve logical table references to datastore definitions that templates can inspect.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p><strong>Templates define platform conventions.</strong> Reuse physical naming, technical-field expressions, write rules, and artifact structure across mappings.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>Template packages can generate multiple files and use Velocity, Pebble, FreeMarker, or Jinjava. The public repository also includes structured SQL rendering and a text-generation example for an ODI mapping strategy. The separate ODI SDK extension supports generation and deployment of native ODI objects.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading -->
+<h2 class="wp-block-heading">Try it locally</h2>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>With JDK 21 and Maven, run this from a local checkout of the repository:</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:code -->
+<pre class="wp-block-code"><code>mvn compile exec:java "-Dexec.args=examples/airflow-bigquery-draft"</code></pre>
+<!-- /wp:code -->
+
+<!-- wp:paragraph -->
+<p>At the <code>sqlm&gt;</code> prompt, enter:</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:code -->
+<pre class="wp-block-code"><code>apply airflow_bigquery to mapping employees_to_prep
+exit</code></pre>
+<!-- /wp:code -->
+
+<!-- wp:paragraph -->
+<p>The package writes the SQL and Python files under the example project's <code>generated/airflow_bigquery/employees_to_prep/</code> directory.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p><strong>Public repository scope:</strong> the framework generates files; execution and deployment belong to the target systems. The Airflow/BigQuery example implements a scoped upsert strategy. Generated SQL and Python are checked against regression fixtures, but have not been runtime-tested in Airflow or BigQuery. The separate ODI SDK extension is not included.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:buttons -->
+<div class="wp-block-buttons"><!-- wp:button -->
+<div class="wp-block-button"><a class="wp-block-button__link wp-element-button" href="https://github.com/adineagu/structured-sql-api">Explore the source and quick start</a></div>
+<!-- /wp:button --></div>
+<!-- /wp:buttons -->

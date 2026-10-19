@@ -1,0 +1,6 @@
+engine: velocity
+artifacts:
+  - template: clean.vtl
+    output: "01_{name}_clean.sql"
+  - template: validate.vtl
+    output: "02_{name}_validate.sql"

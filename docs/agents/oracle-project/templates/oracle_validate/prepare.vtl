@@ -1,0 +1,41 @@
+## Datastore strategy: no query renderer or lower-level parser is needed.
+$ctx.require($datastore.name.matches('[A-Za-z_][A-Za-z0-9_]*([.][A-Za-z_][A-Za-z0-9_]*)*'), "Only simple unquoted source identifiers are supported")
+$ctx.require(!$datastore.annotations() || $datastore.annotations().isEmpty(), "Table annotations are unsupported by this example")
+$ctx.require($ctx.has($datastore.attributes), "Columns are required")
+#set($cleanView = "${datastore.basename}_CLEAN")
+#foreach($column in $datastore.attributes)
+$ctx.require($column.name.matches('[A-Za-z_][A-Za-z0-9_]*'), "Only simple column identifiers are supported")
+#if($column.annotations() && !$column.annotations().isEmpty())
+$ctx.require($column.annotations().all().size() == 1 && $column.annotations().has("CLEANSE"), "Only CLEANSE is supported on columns")
+#set($policy = $column.annotations().get("CLEANSE"))
+$ctx.require($policy.attributes().size() == 1 && $policy.attribute("OP") == "TRIM" && $column.dataType == "VARCHAR", "CLEANSE requires OP=TRIM on VARCHAR")
+#end
+#end
+#foreach($condition in $datastore.conditions)
+$ctx.require($condition.name.matches('[A-Za-z_][A-Za-z0-9_]*'), "Unsupported CHECK name")
+$ctx.require($condition.condition && !$condition.condition.isBlank(), "CHECK text is required")
+#if($condition.annotations() && !$condition.annotations().isEmpty())
+$ctx.require($condition.annotations().all().size() == 1 && $condition.annotations().has("VALIDATION"), "Only VALIDATION is supported on CHECK constraints")
+#set($policy = $condition.annotations().get("VALIDATION"))
+$ctx.require($policy.attributes().size() == 1, "VALIDATION accepts only SEVERITY")
+$ctx.require($policy.attribute("SEVERITY") == "ERROR" || $policy.attribute("SEVERITY") == "WARN", "VALIDATION requires SEVERITY=ERROR or WARN")
+#end
+#end
+#foreach($key in $datastore.keys)
+$ctx.require($key.isPrimaryKey() || $key.isAlternateKey(), "Only primary and unique keys are supported")
+$ctx.require($ctx.has($key.keyColumns), "Key columns are required")
+$ctx.require($key.isPrimaryKey() || $key.keyColumns.size() == 1, "Composite unique keys require a separate null policy")
+$ctx.require($key.name.matches('[A-Za-z_][A-Za-z0-9_]*'), "Unsupported constraint name")
+#foreach($name in $key.keyColumns)
+$ctx.require(!!$datastore.getAttribute($name), "Unknown key column: $name")
+#if($key.isPrimaryKey())
+$ctx.require($datastore.getAttribute($name).isMandatory, "Primary key columns must explicitly declare NOT NULL")
+#end
+#end
+#if($key.annotations() && !$key.annotations().isEmpty())
+$ctx.require($key.annotations().all().size() == 1 && $key.annotations().has("VALIDATION"), "Only VALIDATION is supported on keys")
+#set($policy = $key.annotations().get("VALIDATION"))
+$ctx.require($policy.attributes().size() == 1, "VALIDATION accepts only SEVERITY")
+$ctx.require($policy.attribute("SEVERITY") == "ERROR" || $policy.attribute("SEVERITY") == "WARN", "VALIDATION requires SEVERITY=ERROR or WARN")
+#end
+#end
