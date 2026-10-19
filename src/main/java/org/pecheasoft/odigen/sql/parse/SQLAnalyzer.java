@@ -333,8 +333,8 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
 
                     idx++;
 
-                    if (ctx.getChild(idx) instanceof TerminalNode) {
-                        if (terminalNode.getSymbol().getType() == ALL) {
+                    if (ctx.getChild(idx) instanceof TerminalNode modifier) {
+                        if (modifier.getSymbol().getType() == ALL) {
                             distinct = false;
                         }
 
@@ -392,11 +392,11 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
                         idx++;
                     }
 
-                    if (ctx.getChild(idx) instanceof TerminalNode) {
-                        if (terminalNode.getSymbol().getType() == ALL) {
+                    if (ctx.getChild(idx) instanceof TerminalNode modifier) {
+                        if (modifier.getSymbol().getType() == ALL) {
                             distinct = false;
-                            idx++;
                         }
+                        idx++;
                     }
 
                     Query_primaryContext queryPrimaryContext = (Query_primaryContext) ctx.getChild(idx);
@@ -406,7 +406,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
                     distInds.add(distinct);
                     opTypes.add(SetOperation.Type.INTERSECT);
 
-                    i += idx;
+                    i = idx + 1;
                 }
             }
             return new SetOperation(SetOperation.Type.INTERSECT, operands.toArray(Expr[]::new), opTypes.toArray(SetOperation.Type[]::new),
@@ -1289,7 +1289,9 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
     
     @Override
     public Expr visitScalar_subquery(SQLParser.Scalar_subqueryContext ctx) {
-        return new ScalarSubQuery(visitChildren(ctx));
+        ScalarSubQuery query = new ScalarSubQuery(visitChildren(ctx));
+        query.setText(getRuleText(ctx));
+        return query;
     }
 
     @Override
@@ -1427,6 +1429,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
                     visitIn_predicate_value(ctx.in_predicate_value()), ctx.NOT() != null);
         }
                 
+        if (ctx.in_predicate_value().table_subquery() != null) predicate.setText(getRuleText(ctx));
         return predicate;
     }
     
@@ -1456,6 +1459,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
                     visitTable_subquery(ctx.table_subquery()), ctx.comp_op().getText(), null);
         }
         
+        predicate.setText(getRuleText(ctx));
         return predicate;
     }
     
@@ -1521,6 +1525,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
     public ExistsPredicate visitExists_predicate(SQLParser.Exists_predicateContext ctx) {
         ExistsPredicate predicate;
         predicate = new ExistsPredicate(new SimpleTableSubQuery(visitTable_subquery(ctx.table_subquery())), ctx.NOT() != null);
+        predicate.setText(getRuleText(ctx));
 
         return predicate;
         
@@ -2719,7 +2724,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
             String keyName = keyCtx.key_name.getText();
             TableConstraint constraint = new TableConstraint(keyName, scope, controlFlow, controlStatic, inDatabase, active, description);
             keyColumnNames = keyCtx.column_name_list().target_column().stream().map(c -> c.identifier().getText()).collect(Collectors.toList());
-            TableKey key = new TableKey(constraint, keyColumnNames, Objects.nonNull(keyCtx.PRIMARY_KEY()), Objects.nonNull(keyCtx.ALTERNATE_KEY()) && Objects.nonNull(keyCtx.UNIQUE()));
+            TableKey key = new TableKey(constraint, keyColumnNames, Objects.nonNull(keyCtx.PRIMARY_KEY()), Objects.nonNull(keyCtx.ALTERNATE_KEY()) || Objects.nonNull(keyCtx.UNIQUE()));
             
             if (Objects.nonNull(ctx.annotation())) {
                 Collection<Annotation> annotations = getAnnotations(ctx.annotation());

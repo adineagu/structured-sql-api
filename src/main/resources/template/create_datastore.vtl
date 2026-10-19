@@ -15,5 +15,5 @@ RESOURCE '$stageDatastoreName'
 );
 
 #macro (getDataType $col)
-#if($col.isAnnotatedWith("PROPERTIES") && $col.getAnnotation("PROPERTIES").getParameters().get("CHAR_LENGTH_SEMANTIC") == "CHAR")VARCHAR2_CHAR($col.Length)#else$!col.DDLDataType#end
+#if($col.annotations() && $col.annotations().has("PROPERTIES") && $col.annotations().get("PROPERTIES").attribute("CHAR_LENGTH_SEMANTIC") == "CHAR")VARCHAR2_CHAR($col.Length)#else$!col.DDLDataType#end
 #end

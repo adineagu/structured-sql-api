@@ -10,7 +10,6 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 
 public class AnnotatedObject implements Annotated {
 
-    //@JsonProperty("Annotations")
     @JsonIgnore
     private Collection<Annotation> annotations; 
     

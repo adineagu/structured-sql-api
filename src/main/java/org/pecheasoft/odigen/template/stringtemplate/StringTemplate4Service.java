@@ -5,10 +5,9 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import org.apache.commons.lang3.tuple.Pair;
-import org.pecheasoft.odigen.template.ITemplate;
-import org.pecheasoft.odigen.template.ITemplateParameter;
-import org.pecheasoft.odigen.template.ITemplateService;
+import org.pecheasoft.odigen.project.ProjectObject;
+import org.pecheasoft.odigen.template.TemplateEngineFacade;
+import org.pecheasoft.odigen.template.TemplateParameter;
 import org.stringtemplate.v4.ST;
 import org.stringtemplate.v4.STGroup;
 import org.stringtemplate.v4.STGroupString;
@@ -19,7 +18,7 @@ import org.stringtemplate.v4.STGroupString;
  * 
  * @author Generated
  */
-public class StringTemplate4Service implements ITemplateService {
+public class StringTemplate4Service implements TemplateEngineFacade {
 
     private STGroup group;
     private Map<String, String> templateBodies;
@@ -29,27 +28,26 @@ public class StringTemplate4Service implements ITemplateService {
         initialize();
     }
 
-    @Override
     public void initialize() {
         // Initialize with an empty group. Templates will be added via loadTemplates()
         this.group = new STGroupString("");
     }
 
     @Override
-    public void loadTemplates(Collection<ITemplate> templates) {
+    public void loadTemplates(Collection<ProjectObject> templates) {
         // Clear existing templates
         templateBodies.clear();
         
         // Store template bodies
-        templates.forEach(t -> templateBodies.put(t.getName(), t.getBody()));
+        templates.forEach(t -> templateBodies.put(t.id().qualifiedName(), t.content()));
         
         // Build group with all templates
         StringBuilder groupDef = new StringBuilder();
         templates.forEach(t -> {
             // ST4 template definition format: templateName(params) ::= <<template body>>
-            groupDef.append(t.getName()).append("(");
+            groupDef.append(t.id().qualifiedName()).append("(");
             groupDef.append(") ::= <<\n");
-            groupDef.append(t.getBody());
+            groupDef.append(t.content());
             groupDef.append("\n>>\n\n");
         });
         
@@ -81,32 +79,31 @@ public class StringTemplate4Service implements ITemplateService {
     }
 
     @Override
-    public String evaluate(ITemplate template, Collection<ITemplateParameter> parameters) {
+    public String resolve(ProjectObject template, Collection<TemplateParameter> parameters) {
         ST st;
         
         // Check if template is in the group
-        if (group.isDefined(template.getName())) {
-            st = group.getInstanceOf(template.getName());
+        if (group.isDefined(template.id().qualifiedName())) {
+            st = group.getInstanceOf(template.id().qualifiedName());
         } else {
             // Create a standalone template if not in group
-            st = new ST(group, template.getBody());
+            st = new ST(group, template.content());
         }
         
         if (st == null) {
-            throw new RuntimeException("Template not found: " + template.getName());
+            throw new RuntimeException("Template not found: " + template.id().qualifiedName());
         }
         
         // Add all parameters to the template
-        parameters.forEach(p -> st.add(p.getName(), p.getValue()));
+        Map<String, Object> context = parameters.stream()
+            .collect(Collectors.toMap(
+                TemplateParameter::name,
+                TemplateParameter::value
+            ));
         
+        context.forEach(st::add);
+
         return st.render();
     }
 
-    @Override
-    public String evaluate(Collection<Pair<ITemplate, Collection<ITemplateParameter>>> templatesCollection) {
-        return templatesCollection
-            .stream()
-            .map(p -> evaluate(p.getLeft(), p.getRight()))
-            .collect(Collectors.joining("\n"));
-    }
 }

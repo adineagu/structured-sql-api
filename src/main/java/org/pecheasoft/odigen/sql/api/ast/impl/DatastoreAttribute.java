@@ -14,14 +14,17 @@
  */
 package org.pecheasoft.odigen.sql.api.ast.impl;
 
-import org.pecheasoft.odigen.sql.api.ast.IDatastoreAttribute;
+import org.pecheasoft.odigen.sql.api.ast.SemanticAnnotationSet;
+import org.pecheasoft.odigen.sql.api.ast.SemanticModel;
 import org.pecheasoft.odigen.sql.util.CatalogConstants;
 import org.pecheasoft.odigen.sql.util.TUtil;
-import org.pecheasoft.odigen.sql.util.annotation.impl.AnnotatedObject;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+
+import org.apache.commons.lang3.StringUtils;
+
 
 /**
  *
@@ -43,7 +46,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
     }
 )
 @JsonInclude(Include.NON_NULL)
-public class DatastoreAttribute extends AnnotatedObject implements IDatastoreAttribute {
+public class DatastoreAttribute implements SemanticModel {
 
     private String name;
     private String dataType;
@@ -57,8 +60,8 @@ public class DatastoreAttribute extends AnnotatedObject implements IDatastoreAtt
     private String scdBehavior;
     private String defaultValue;
     private String description;
+    private SemanticAnnotationSet annotations;
 
-    @Override
     public String getName() {
         return name;
     }
@@ -67,7 +70,6 @@ public class DatastoreAttribute extends AnnotatedObject implements IDatastoreAtt
         this.name = name;
     }
 
-    @Override
     public String getDataType() {
         return dataType;
     }
@@ -76,7 +78,6 @@ public class DatastoreAttribute extends AnnotatedObject implements IDatastoreAtt
         this.dataType = dataType;
     }
 
-    @Override
     public Integer getLength() {
         return length;
     }
@@ -85,7 +86,6 @@ public class DatastoreAttribute extends AnnotatedObject implements IDatastoreAtt
         this.length = length;
     }
 
-    @Override
     public Integer getPosition() {
         return position;
     }
@@ -94,7 +94,6 @@ public class DatastoreAttribute extends AnnotatedObject implements IDatastoreAtt
         this.position = position;
     }
 
-    @Override
     public Integer getPrecision() {
         return precision;
     }
@@ -103,7 +102,6 @@ public class DatastoreAttribute extends AnnotatedObject implements IDatastoreAtt
         this.precision = precision;
     }
 
-    @Override
     public Integer getScale() {
         return scale;
     }
@@ -112,7 +110,6 @@ public class DatastoreAttribute extends AnnotatedObject implements IDatastoreAtt
         this.scale = scale;
     }
 
-    @Override
     public boolean getIsMandatory() {
         return isMandatory;
     }
@@ -121,7 +118,6 @@ public class DatastoreAttribute extends AnnotatedObject implements IDatastoreAtt
         this.isMandatory = isMandatory;
     }
 
-    @Override
     public boolean getIsPrimaryKey() {
         return isPrimaryKey;
     }
@@ -130,7 +126,6 @@ public class DatastoreAttribute extends AnnotatedObject implements IDatastoreAtt
         this.isPrimaryKey = isPrimaryKey;
     }
 
-    @Override
     public String getDefaultValue() {
         return defaultValue;
     }
@@ -139,7 +134,6 @@ public class DatastoreAttribute extends AnnotatedObject implements IDatastoreAtt
         this.defaultValue = defaultValue;
     }
 
-    @Override
     public String getFormat() {
         return format;
     }
@@ -148,7 +142,6 @@ public class DatastoreAttribute extends AnnotatedObject implements IDatastoreAtt
         this.format = format;
     }
 
-    @Override
     public String getScdBehavior() {
         return scdBehavior;
     }
@@ -157,7 +150,6 @@ public class DatastoreAttribute extends AnnotatedObject implements IDatastoreAtt
         this.scdBehavior = scdBehavior;
     }
 
-    @Override
     public String getDescription() {
         return description;
     }
@@ -166,7 +158,6 @@ public class DatastoreAttribute extends AnnotatedObject implements IDatastoreAtt
         this.description = description;
     }
 
-    @Override
     public String toString() {
         String vRet = (getPosition() == 1 ? " " : ",") + getName();
         vRet = vRet + "\t" + getDDLDataType();
@@ -183,5 +174,51 @@ public class DatastoreAttribute extends AnnotatedObject implements IDatastoreAtt
 
         return vRet;
     }
+
+    public String getDDLDataType() {
+        String vRet;
+
+        String dataType = TUtil.encloseNonReservedWordsIfRequired(getDataType().trim());
+        
+        if (getPrecision() != null && !getPrecision().equals(0)) {
+            vRet = dataType.concat("(").concat(getPrecision().toString());
+            if (getScale() != null && !getScale().equals(0)) {
+                vRet = vRet.concat(",").concat(getScale().toString());
+            }
+            vRet = vRet.concat(")");
+        } else if (getLength() != null && !getLength().equals(0)) {
+            vRet = dataType.concat("(").concat(getLength().toString()).concat(")");
+        } else {
+            vRet = dataType;
+        }
+
+        return vRet;
+    }
+
+    public String toSql() {
+        String vRet = getName();
+        vRet = vRet + " " + getDDLDataType();
+        if (getIsMandatory()) {
+            vRet = vRet + " " + "NOT NULL";
+        }
+        if (StringUtils.isNotEmpty(getFormat())) {
+            vRet = vRet + " FORMAT " + "'" + getFormat() + "'";
+        }
+
+        if (StringUtils.isNotEmpty(getScdBehavior())) {
+            vRet = vRet + " " + getScdBehavior();
+        }
+
+        return vRet;
+    }
+
+    @Override
+    public SemanticAnnotationSet annotations() {
+        return annotations;
+    }
+
+    public void setAnnotations(SemanticAnnotationSet annotations) {
+        this.annotations = annotations;
+    }   
 
 }

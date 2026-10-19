@@ -1,0 +1,60 @@
+#parse("library.Query")
+## This application template owns the OTP stage-to-prep policy. library.Query only renders.
+$ctx.require($ctx.kind($mapping) == "insert", "This strategy requires an INSERT mapping")
+$ctx.require(!$ctx.has($mapping.multiInsertTargets), "Multi-target mappings are not supported by this strategy yet")
+$ctx.require($ctx.kind($mapping.query) == "simple", "This strategy requires a simple outer query")
+$ctx.require(!$mapping.query.isDistinct && !$ctx.has($mapping.query.groupByList) && !$ctx.has($mapping.query.havingList), "DISTINCT and grouped queries need a separate strategy acceptance case")
+$ctx.require(!$ctx.hasIntegrationSettings($mapping), "Configure integration through PROPERTIES annotations for this strategy")
+$ctx.require($mapping.annotations() && $mapping.annotations().has("PROPERTIES"), "Missing mapping PROPERTIES annotation")
+#set($properties = $mapping.annotations().get("PROPERTIES"))
+#set($supported = ["MAPPING_PATH", "MAPPING_NAME", "INTEGRATION_TYPE", "UPDATE_KEY"])
+#foreach($entry in $properties.attributes().entrySet())
+$ctx.require($supported.contains($entry.key), "Unsupported mapping property: $entry.key")
+#end
+#foreach($name in $supported)
+$ctx.require($properties.attribute($name) && !$properties.attribute($name).trim().isEmpty(), "Missing mapping property: $name")
+#end
+$ctx.require($properties.attribute("INTEGRATION_TYPE") == "Incremental Update", "This strategy currently supports Incremental Update only")
+#set($updateKey = $properties.attribute("UPDATE_KEY").toUpperCase())
+#set($keyFound = false)
+#foreach($key in $mapping.target.datastore.keys)
+#if($key.name.equalsIgnoreCase($updateKey) && ($key.isPrimaryKey() || $key.isAlternateKey()))
+#set($keyFound = true)
+#foreach($keyColumn in $key.keyColumns)
+#set($columnFound = false)
+#foreach($column in $mapping.columns)
+#if($column.name.equalsIgnoreCase($keyColumn))#set($columnFound = true)#end
+#end
+$ctx.require($columnFound, "Update-key column is not assigned: $keyColumn")
+#end
+#end
+#end
+$ctx.require($keyFound, "Update key is not a primary or unique key in the target definition: $updateKey")
+#set($technical = {
+    "LOAD_ID": "GET_LOAD_ID()",
+    "UPDATE_ID": "GET_LOAD_ID()",
+    "LOAD_DATE": "SYSDATE",
+    "EFFECTIVE_DATE": "GET_EFFECTIVE_DATE()"
+})
+#set($prepared = $ctx.prependAssignments($mapping, $technical))
+$ctx.removeAnnotation($prepared, "PROPERTIES")
+#set($configured = $ctx.useDeclaredDatastoreNames())
+$ctx.validate($prepared)
+#set($mappingName = "$!{properties.attribute('MAPPING_PATH')}.$!{ctx.quotedIdentifier($properties.attribute('MAPPING_NAME').toUpperCase())}")
+TRUNCATE MAPPING IF EXISTS $mappingName;
+
+CREATE OR REPLACE MAPPING $mappingName
+PHYSICAL DESIGN "Physical"
+(
+    OPTIMIZATION CONTEXT GLOBAL
+    XKM "XKM Oracle Extract.GLOBAL" FOR TECHNOLOGY "Oracle"
+    IKM "IKM Oracle Merge.GLOBAL" FOR TECHNOLOGY "Oracle"
+    CKM "CKM Oracle.GLOBAL" FOR TECHNOLOGY "Oracle"
+)
+AS
+$ctx.annotations($prepared)
+#InsertTarget($prepared $ctx)
+INTEGRATION TYPE 'Incremental Update'
+UPDATE KEY $updateKey
+#Query($prepared.query $ctx)
+;

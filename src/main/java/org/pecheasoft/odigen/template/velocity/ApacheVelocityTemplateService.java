@@ -7,52 +7,56 @@ package org.pecheasoft.odigen.template.velocity;
 
 import java.io.StringWriter;
 import java.util.Collection;
-import java.util.stream.Collectors;
+import java.util.HashMap;
+import java.util.Map;
 
-import org.apache.commons.lang3.tuple.Pair;
 import org.apache.velocity.Template;
 import org.apache.velocity.VelocityContext;
-import org.apache.velocity.app.Velocity;
 import org.apache.velocity.app.VelocityEngine;
 import org.apache.velocity.runtime.resource.loader.StringResourceLoader;
 import org.apache.velocity.runtime.resource.util.StringResourceRepository;
-import org.pecheasoft.odigen.template.ITemplate;
-import org.pecheasoft.odigen.template.ITemplateParameter;
-import org.pecheasoft.odigen.template.ITemplateService;
+import org.pecheasoft.odigen.project.ProjectObject;
+import org.pecheasoft.odigen.template.TemplateEngineFacade;
+import org.pecheasoft.odigen.template.TemplateParameter;
 
 /**
  *
  * @author Adi Neagu
  */
-public final class ApacheVelocityTemplateService implements ITemplateService {
+public final class ApacheVelocityTemplateService implements TemplateEngineFacade {
 
     protected VelocityEngine engine;
     protected StringResourceRepository repo;
+
+    private final Map<String, String> templateCache = new HashMap<>();
 
     public ApacheVelocityTemplateService() {
         initialize();
     }
 
-    @Override
     public void initialize() {
         initVelocityEngine();
     }
 
     @Override
-    public void loadTemplates(Collection<ITemplate> templates) {
-        templates.stream().forEach (
-            t -> {if (repo.getStringResource(t.getName()) != null) repo.removeStringResource(t.getName());}
-        );
+    public void loadTemplates(Collection<ProjectObject> templates) {
+        templateCache.keySet().forEach(repo::removeStringResource);
+        templateCache.clear();
+        templates.forEach(this::register);
+    }
 
-        templates.stream().forEach (t -> repo.putStringResource(t.getName(), t.getBody(), "UTF-8"));
+    private void register(ProjectObject template) {
+        templateCache.put(template.id().qualifiedName(), template.content());
+        repo.putStringResource(template.id().qualifiedName(), template.content());
     }
 
     @Override
-    public String evaluate(ITemplate template, Collection<ITemplateParameter> parameters) {
+    public String resolve(ProjectObject template, Collection<TemplateParameter> parameters) {
         VelocityContext context = new VelocityContext();
-        parameters.forEach(p -> context.put(p.getName(), p.getValue()));
+        parameters.forEach(p -> context.put(p.name(), p.value()));
 
-        Template repoTemplate = Velocity.getTemplate(template.getName());
+        register(template);
+        Template repoTemplate = engine.getTemplate(template.id().qualifiedName());
 
         StringWriter writer = new StringWriter();
         repoTemplate.merge(context, writer);
@@ -60,23 +64,14 @@ public final class ApacheVelocityTemplateService implements ITemplateService {
         return writer.toString();
     }
 
-    @Override
-    public String evaluate(Collection<Pair<ITemplate, Collection<ITemplateParameter>>> templatesCollection) {
-        return templatesCollection
-            .stream()
-            .map(p -> evaluate(p.getLeft(), p.getRight()))
-            .collect(Collectors.joining("\n"));
-    }
-
     private void initVelocityEngine() {
-        Velocity.reset();
-        Velocity.setProperty(Velocity.RESOURCE_LOADERS, "string");
-        Velocity.addProperty("string.resource.loader.class", StringResourceLoader.class.getName());
-        Velocity.addProperty("string.resource.loader.modificationCheckInterval", "1");
-        Velocity.addProperty("velocimacro.max_depth", -1);
-        Velocity.init();
-
-        repo = getRepo(null, null);
+        engine = new VelocityEngine();
+        engine.setProperty("resource.loaders", "string");
+        engine.setProperty("resource.loader.string.class", StringResourceLoader.class.getName());
+        engine.setProperty("resource.loader.string.repository.static", false);
+        engine.setProperty("resource.loader.string.cache", false);
+        engine.init();
+        repo = getRepo(null, engine);
     }
 
     private StringResourceRepository getRepo(String name, VelocityEngine engine) {

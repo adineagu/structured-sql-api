@@ -1,99 +1,90 @@
+## library.Query: pure AST rendering. Public entry points: Render, Query, Insert.
+## Render validates first. Query/Insert are composable; callers using them directly must validate.
+#macro(Render $node $ctx)
+$ctx.validate($node)#if($ctx.kind($node) == "insert")#Insert($node $ctx)#else#Query($node $ctx)#end
+#end
 
-#macro (Query $query $layer $isMain)
-#foreach($qry in $query.DatasetList)
-$!qry.SetOperator
-$!qry.AnnotationsString
-SELECT #if ($qry.IsDistinct) DISTINCT #end
-#if($isMain)
-#get_Tech_Cols_Expr($layer)
+#macro(Expressions $items $separator $ctx)
+#foreach($item in $items)#if($foreach.count > 1)$separator #end$ctx.expression($item)#end
 #end
-#foreach($selItem in $qry.SelectList)
-#if($foreach.count == 1 && $isMain == false)    #else    ,#end$selItem.Expression as $selItem.Alias
+
+#macro(Query $node $ctx)
+$ctx.annotations($node)
+#if($ctx.kind($node) == "set")
+#foreach($dataset in $node.datasets)
+#if($dataset.setOperator)$dataset.setOperator#end
+#if($ctx.setParentheses($dataset.dataset))(#Query($dataset.dataset $ctx))#else#Query($dataset.dataset $ctx)#end
 #end
+#elseif($ctx.kind($node) == "simple")
+SELECT #if($node.isDistinct)DISTINCT #end
+#foreach($item in $node.selectList)
+#if($foreach.count > 1), #end$ctx.annotations($item) $ctx.expression($item.expression) AS $item.alias
+#end
+#if($ctx.has($node.fromList))
 FROM
-#foreach($from in $qry.FromList)
-#joinLeftItem($from)
-    #if("$!from.Name" != "")@properties(name="$!from.Name")#else$!from.Name#end
-    #if($from.JoinType) $from.JoinType#end #joinRightItem($from)
-#if($from.JoinExpression) ON $from.JoinExpression #end
+#foreach($from in $node.fromList)#if($foreach.count > 1), #end#Source($from $ctx)#end
 #end
-#if ("$!qry.WhereText" != "")
+#if($ctx.has($node.whereList))
 WHERE
-#foreach($selItem in $qry.WhereList)
-#if($foreach.count != 1)AND #end$selItem
+#foreach($filter in $node.whereList)#if($foreach.count > 1) AND #end($ctx.expression($filter))#end
 #end
+#if($ctx.has($node.groupByList))
+GROUP BY #Expressions($node.groupByList "," $ctx)
 #end
-#if ("$!qry.PivotText" != "")
-    $qry.PivotText
+#if($ctx.has($node.havingList))
+HAVING #Expressions($node.havingList "AND" $ctx)
 #end
-#if ($qry.GroupByText)
-GROUP BY
-    $qry.GroupByText
+#if($ctx.has($node.orderByList))
+ORDER BY #Expressions($node.orderByList "," $ctx)
 #end
-#if ($qry.HavingText)
-HAVING
-    $qry.HavingText
-#end
-#if ($qry.OrderByText)
-ORDER BY
-    $qry.OrderByText
-#end
-#end
-#end
-
-#macro (fromLeftItem $from ) 
-#joinLeftItem($from)
-    #if("$!from.Name" != "")@properties(name="$!from.Name")#else$!from.Name#end
-    $from.JoinType #joinRightItem($from)
-#if($from.JoinExpression) ON $from.JoinExpression #end
-#end
-
-#macro (fromRightItem $from ) 
-#joinLeftItem($from)
-    #if("$!from.Name" != "")@properties(name="$!from.Name")#else$!from.Name#end
-    $from.JoinType #joinRightItem($from)
-#if($from.JoinExpression) ON $from.JoinExpression #end
-#end
-
-#macro (joinLeftItem $from)
-#if($from.LeftTable)    $from.LeftTable.getPhysName($ctx) $from.LeftTable.Alias #end
-#if($from.LeftQuery)    (#Query($from.LeftQuery "" false)) $from.LeftQuery.Name #end
-#if($from.LeftJoin)    #fromLeftItem($from.LeftJoin) #end
-#end
-
-#macro (joinRightItem $from)
-#if($from.RightTable)    $from.RightTable.getPhysName($ctx) $from.RightTable.Alias #end
-#if($from.RightQuery)    (#Query($from.RightQuery "" false)) $from.RightQuery.Name #end
-#if($from.RightJoin)    #fromRightItem($from.RightJoin) #end
-#end
-
-#macro (Insert $insert)
-#if(!$insert.MultiInsertTargets || $insert.MultiInsertTargets.isEmpty())
-INSERT INTO $insert.Target.getPhysName($ctx) (
-#get_Tech_Cols($targetLayer)
-#foreach($column in $insert.Columns)   
-    ,$column.AnnotationsString $column.Name
-#end
-)
-#get_Integration_Params($insert)
+$ctx.limitClause($node)
 #else
+$ctx.unsupported($node)
+#end
+#end
+
+#macro(Source $node $ctx)
+#if($ctx.kind($node) == "table")
+$ctx.annotations($node) $ctx.sourceName($node)#if($node.alias) $node.alias#end
+#elseif($ctx.kind($node) == "nested")
+$ctx.annotations($node) (#Query($node.query $ctx)) $node.alias
+#elseif($ctx.kind($node) == "join")
+$ctx.annotations($node)
+#if($ctx.right($node))
+(#Source($ctx.left($node) $ctx) $node.joinType #Source($ctx.right($node) $ctx)#if($node.joinExpression) ON $ctx.expression($node.joinExpression)#end)
+#else
+#Source($ctx.left($node) $ctx)
+#end
+#else
+$ctx.unsupported($node)
+#end
+#end
+
+#macro(Insert $node $ctx)
+$ctx.annotations($node)
+#if($ctx.has($node.multiInsertTargets))
 INSERT ALL
-#foreach($targ in $insert.MultiInsertTargets)
-#set($targetTableName=$targ.Target.Name)
-#set($targLayer = $targetTableName.substring(0, $targetTableName.indexOf('_')))
-WHEN ($targ.Condition) THEN INTO $targ.Target.getPhysName($ctx) $targ.Target.Alias (
-#get_Tech_Cols($targLayer)
-#foreach($selItem in $targ.SelectList)
-    ,$selItem.Alias
+#foreach($target in $node.multiInsertTargets)
+$ctx.annotations($target)
+#if($target.condition)WHEN ($target.condition) THEN #end
+INTO $ctx.targetName($target.target)#if($target.target.alias) $target.target.alias#end (
+#foreach($item in $target.selectList)#if($foreach.count > 1), #end$item.alias#end
+) VALUES (#foreach($item in $target.selectList)#if($foreach.count > 1), #end$ctx.expression($item.expression)#end)
+$ctx.integration($target)
 #end
-)
-VALUES (
-#get_Tech_Cols_Expr($targLayer "noAlias")
-#foreach($selItem in $targ.SelectList)
-    ,$selItem.Expression.Text
+#else
+#InsertTarget($node $ctx)
+$ctx.integration($node)
 #end
-)
-#get_Integration_Params_MultiInsert($targ $insert)
+#Query($node.query $ctx)
 #end
+
+## Single-target header only, for strategies that supply their own integration clause.
+## Callers validate the complete prepared AST before composing this with Query.
+#macro(InsertTarget $node $ctx)
+$ctx.require(!$ctx.has($node.multiInsertTargets), "InsertTarget requires a single target")
+INSERT INTO $ctx.targetName($node.target)#if($node.target.alias) $node.target.alias#end
+#if($ctx.has($node.columns))
+(#foreach($column in $node.columns)#if($foreach.count > 1), #end$ctx.annotations($column) $column.name#end)
 #end
 #end

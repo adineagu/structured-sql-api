@@ -1,0 +1,38 @@
+@SCD (
+    SCD_TYPE="SCD4"
+)
+@MAP (
+    CDC_FILTER_MAP="",
+    SOURCE_SYSTEM_CODE="",
+    MAPPING_PATH="",
+    INTEGRATION_TYPE=""
+)
+@VIEW (
+    SOURCE_DBLINK="",
+    SOURCE_SCHEMA="",
+    FILTER_VIEW_HIST="",
+    CDC_FILTER_VIEW="",
+    FILTER_VIEW_CRT=""
+)
+CREATE TABLE AST(
+    AST_ID NUMBER NOT NULL NATURAL_KEY
+    ,@properties(char_length_semantic="CHAR")
+     AST_SOURCE_IDENTIFIER VARCHAR2 NOT NULL
+    ,@properties(char_length_semantic="CHAR")
+     BUILDING_ACCOUNT_IDENTIFIER VARCHAR2
+    ,STATUS VARCHAR2
+    ,OPENING_DT DATE
+    ,CONTRACT_NO VARCHAR2
+    ,CONTRACT_DT DATE
+    ,CANCELLATION_DT DATE
+    ,@properties(char_length_semantic="CHAR")
+     SALES_PERSON_NM VARCHAR2
+    ,@properties(char_length_semantic="CHAR")
+     OPERATION_PERSON_NM VARCHAR2
+    ,SALES_CHANNEL_CD VARCHAR2
+    ,CURRENCY_CD VARCHAR2
+    ,@properties(char_length_semantic="CHAR")
+     CUSTOMER_SOURCE_IDENTIFIER VARCHAR2
+    ,@properties(additionalProperties = "ENABLED VALIDATE")
+     CONSTRAINT AST_UK UNIQUE KEY(AST_ID) TYPE ODI DEFINED IN DATABASE ACTIVE 
+)

@@ -1,10 +1,7 @@
 package org.pecheasoft.odigen.sql.api.ast.impl;
 
-import java.util.Collection;
-
-import org.pecheasoft.odigen.sql.api.ast.IDatastoreConstraint;
-import org.pecheasoft.odigen.sql.util.annotation.Annotation;
-import org.pecheasoft.odigen.sql.util.annotation.impl.AnnotatedObject;
+import org.pecheasoft.odigen.sql.api.ast.SemanticAnnotationSet;
+import org.pecheasoft.odigen.sql.api.ast.SemanticModel;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
@@ -15,7 +12,19 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include;
  */
 
 @JsonInclude(Include.NON_NULL)
-public class DatastoreConstraint extends AnnotatedObject implements IDatastoreConstraint {
+public class DatastoreConstraint implements SemanticModel {
+
+    public enum ConstraintScope {
+        ODI, DATABASE
+    };
+
+    public enum ConstraintType {
+        KEY, REFERENCE, CHECK
+    };
+
+    public enum KeyConstraintType {
+        UNIQUE, ALTERNATE, INDEX
+    };
 
     private final String keyName;
     private final ConstraintType type;
@@ -25,13 +34,14 @@ public class DatastoreConstraint extends AnnotatedObject implements IDatastoreCo
     private final boolean definedInDatabase;
     private final String message;
     private final boolean active;
+    private SemanticAnnotationSet annotations;
 
     public DatastoreConstraint(
             String keyName, ConstraintType keyType, 
             ConstraintScope scope, 
             Boolean controlFlowEnabled, Boolean controlStaticEnabled, 
             Boolean definedInDatabase, Boolean active, String message,
-            Collection<Annotation> annotations
+            SemanticAnnotationSet annotations
         ) {
         this.keyName = keyName;
         this.type = keyType;
@@ -41,47 +51,48 @@ public class DatastoreConstraint extends AnnotatedObject implements IDatastoreCo
         this.definedInDatabase = definedInDatabase;
         this.active = active;
         this.message = message;
-        setAnnotations(annotations);
+        this.annotations = annotations;
     }
 
-    @Override
     public String getName() {
         return keyName;
     }
 
-    @Override
     public Boolean isFlowControlEnabled() {
         return flowControlEnabled;
     }
 
-    @Override
     public Boolean isStaticControlEnabled() {
         return staticControlEnabled;
     }
 
-    @Override
     public Boolean isDefinedInDatabase() {
         return definedInDatabase;
     }
 
-    @Override
     public Boolean isActive() {
         return active;
     }
 
-    @Override
     public ConstraintType getType() {
         return type;
     }
 
-    @Override
     public ConstraintScope getScope() {
         return scope;
     }
 
-    @Override
     public String getMessage() {
         return message;
+    }
+
+    @Override
+    public SemanticAnnotationSet annotations() {
+        return annotations;
+    }
+
+    public void setAnnotations(SemanticAnnotationSet annotations) {
+        this.annotations = annotations;
     }
 
 }

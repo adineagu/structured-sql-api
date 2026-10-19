@@ -4,16 +4,15 @@ import java.io.StringWriter;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.stream.Collectors;
 
-import org.apache.commons.lang3.tuple.Pair;
-import org.pecheasoft.odigen.template.ITemplate;
-import org.pecheasoft.odigen.template.ITemplateParameter;
-import org.pecheasoft.odigen.template.ITemplateService;
+import org.pecheasoft.odigen.project.ProjectObject;
+import org.pecheasoft.odigen.template.TemplateEngineFacade;
+import org.pecheasoft.odigen.template.TemplateParameter;
 
 import freemarker.template.Configuration;
 import freemarker.template.Template;
 import freemarker.template.Version;
+import freemarker.cache.StringTemplateLoader;
 
 /**
  * FreeMarker implementation of the template service.
@@ -21,21 +20,20 @@ import freemarker.template.Version;
  * 
  * @author Generated
  */
-public class FreeMarkerTemplateService implements ITemplateService {
+public class FreeMarkerTemplateService implements TemplateEngineFacade {
 
     private Configuration cfg;
-    private Map<String, String> templateCache;
+    private StringTemplateLoader loader = new StringTemplateLoader();
 
     public FreeMarkerTemplateService() {
-        this.templateCache = new HashMap<>();
         initialize();
     }
 
-    @Override
-    public void initialize() {
+    private void initialize() {
         // Configure FreeMarker
         cfg = new Configuration(new Version("2.3.33"));
         cfg.setDefaultEncoding("UTF-8");
+        cfg.setTemplateLoader(loader);
         cfg.setTemplateExceptionHandler(freemarker.template.TemplateExceptionHandler.RETHROW_HANDLER);
         cfg.setLogTemplateExceptions(false);
         cfg.setWrapUncheckedExceptions(true);
@@ -43,28 +41,29 @@ public class FreeMarkerTemplateService implements ITemplateService {
     }
 
     @Override
-    public void loadTemplates(Collection<ITemplate> templates) {
+    public void loadTemplates(Collection<ProjectObject> templates) {
         // Clear existing templates
-        templateCache.clear();
+        loader = new StringTemplateLoader();
+        cfg.setTemplateLoader(loader);
         
         // Store template definitions
-        templates.forEach(t -> templateCache.put(t.getName(), t.getBody()));
+        for (ProjectObject template : templates) {
+            loader.putTemplate(template.id().qualifiedName(), template.content());
+        }
+        cfg.clearTemplateCache();
     }
 
     @Override
-    public String evaluate(ITemplate template, Collection<ITemplateParameter> parameters) {
+    public String resolve(ProjectObject template, Collection<TemplateParameter> parameters) {
         try {
             // Create data model
             Map<String, Object> dataModel = new HashMap<>();
-            parameters.forEach(p -> dataModel.put(p.getName(), p.getValue()));
+            parameters.forEach(p -> dataModel.put(p.name(), p.value()));
             
             // Get or create template
-            String templateBody = templateCache.getOrDefault(template.getName(), template.getBody());
-            Template fmTemplate = new Template(
-                template.getName(), 
-                templateBody, 
-                cfg
-            );
+            loader.putTemplate(template.id().qualifiedName(), template.content());
+            cfg.clearTemplateCache();
+            Template fmTemplate = cfg.getTemplate(template.id().qualifiedName());
             
             // Process template
             StringWriter writer = new StringWriter();
@@ -73,15 +72,8 @@ public class FreeMarkerTemplateService implements ITemplateService {
             return writer.toString();
             
         } catch (Exception e) {
-            throw new RuntimeException("Error evaluating FreeMarker template: " + template.getName(), e);
+            throw new RuntimeException("Error evaluating FreeMarker template: " + template.id().qualifiedName(), e);
         }
     }
 
-    @Override
-    public String evaluate(Collection<Pair<ITemplate, Collection<ITemplateParameter>>> templatesCollection) {
-        return templatesCollection
-            .stream()
-            .map(p -> evaluate(p.getLeft(), p.getRight()))
-            .collect(Collectors.joining("\n"));
-    }
 }

@@ -3,12 +3,10 @@ package org.pecheasoft.odigen.template.jte;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.stream.Collectors;
 
-import org.apache.commons.lang3.tuple.Pair;
-import org.pecheasoft.odigen.template.ITemplate;
-import org.pecheasoft.odigen.template.ITemplateParameter;
-import org.pecheasoft.odigen.template.ITemplateService;
+import org.pecheasoft.odigen.project.ProjectObject;
+import org.pecheasoft.odigen.template.TemplateEngineFacade;
+import org.pecheasoft.odigen.template.TemplateParameter;
 
 import gg.jte.CodeResolver;
 import gg.jte.ContentType;
@@ -21,7 +19,7 @@ import gg.jte.output.StringOutput;
  * 
  * @author Generated
  */
-public class JteTemplateService implements ITemplateService {
+public class JteTemplateService implements TemplateEngineFacade {
 
     private TemplateEngine templateEngine;
     private Map<String, String> templateCache;
@@ -31,7 +29,6 @@ public class JteTemplateService implements ITemplateService {
         initialize();
     }
 
-    @Override
     public void initialize() {
         // Create a memory-based code resolver
         CodeResolver codeResolver = new CodeResolver() {
@@ -51,40 +48,33 @@ public class JteTemplateService implements ITemplateService {
     }
 
     @Override
-    public void loadTemplates(Collection<ITemplate> templates) {
-        // Clear and reload template cache
-        templateCache.clear();
-        templates.forEach(t -> templateCache.put(t.getName(), t.getBody()));
-    }
-
-    @Override
-    public String evaluate(ITemplate template, Collection<ITemplateParameter> parameters) {
-        try {
-            // Ensure template is loaded
-            if (!templateCache.containsKey(template.getName())) {
-                templateCache.put(template.getName(), template.getBody());
-            }
-            
-            // Create parameter map
-            Map<String, Object> params = new HashMap<>();
-            parameters.forEach(p -> params.put(p.getName(), p.getValue()));
-            
-            // Render template
-            StringOutput output = new StringOutput();
-            templateEngine.render(template.getName(), params, output);
-            
-            return output.toString();
-            
-        } catch (Exception e) {
-            throw new RuntimeException("Error evaluating JTE template: " + template.getName(), e);
+    public void loadTemplates(Collection<ProjectObject> templates) {
+        for (ProjectObject template : templates) {
+            templateCache.put(template.id().qualifiedName(), template.content());
         }
     }
 
     @Override
-    public String evaluate(Collection<Pair<ITemplate, Collection<ITemplateParameter>>> templatesCollection) {
-        return templatesCollection
-            .stream()
-            .map(p -> evaluate(p.getLeft(), p.getRight()))
-            .collect(Collectors.joining("\n"));
+    public String resolve(ProjectObject template, Collection<TemplateParameter> parameters) {
+        try {
+            // Ensure template is loaded
+            if (!templateCache.containsKey(template.id().qualifiedName())) {
+                templateCache.put(template.id().qualifiedName(), template.content());
+            }
+            
+            // Create parameter map
+            Map<String, Object> params = new HashMap<>();
+            parameters.forEach(p -> params.put(p.name(), p.value()));
+            
+            // Render template
+            StringOutput output = new StringOutput();
+            templateEngine.render(template.id().qualifiedName(), params, output);
+            
+            return output.toString();
+            
+        } catch (Exception e) {
+            throw new RuntimeException("Error evaluating JTE template: " + template.id().qualifiedName(), e);
+        }
     }
+
 }

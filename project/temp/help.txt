@@ -1,0 +1,25 @@
+
+Available commands:
+
+  help
+      Show this help message.
+
+  list <datastores|mappings|templates>
+      List all objects of the given type.
+
+  show <datastore|mapping|template> <id>
+      Show the content of the specified object.
+
+  apply <template_id> to <datastore|mapping> <id>
+      Resolve a template using the AST of the target object.
+
+  clear
+      Clear the console.
+
+  exit
+      Exit the REPL.
+
+  quit
+      Exit the REPL.
+
+
