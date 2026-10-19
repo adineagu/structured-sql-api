@@ -132,10 +132,14 @@ public class SemanticGenerationTest {
     }
 
     @Test
-    public void repositoryAddressMappingStillParsesWithItsAnnotationsAndAssignments() throws Exception {
-        var insert = (InsertNode) parse(java.nio.file.Files.readString(
-                java.nio.file.Path.of("project/mappings/otp.analytic/ad_address_ti_map.sql")));
-        assertEquals("AD_ADDRESS", insert.getTarget().getName());
+    public void relationshipMappingFixtureParsesWithItsAnnotationsAndAssignments() throws Exception {
+        String sql;
+        try (var input = java.util.Objects.requireNonNull(getClass().getResourceAsStream(
+                "/fixtures/mappings/customer-relationship.sql"))) {
+            sql = new String(input.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8);
+        }
+        var insert = (InsertNode) parse(sql);
+        assertEquals("CUSTOMER_RELATIONSHIP", insert.getTarget().getName());
         assertEquals(10, insert.getColumns().size());
         assertEquals("Incremental Update", insert.annotations().get("PROPERTIES").attribute("INTEGRATION_TYPE"));
         assertNotNull(insert.getColumns().get(0).getExpression());

@@ -41,6 +41,12 @@ integration tests.
 
 ## Project workflow
 
+Start the REPL with an explicit application directory, for example
+`java -jar lib/sqlmorph.jar examples/ast-rendering`. There is no implicit default
+project. `--help` prints startup usage without opening a project. Runnable
+applications live under `examples/`; regression inputs under
+`src/test/resources/fixtures/` are not complete application projects.
+
 Place specification files under `datastores/` or `mappings/` and templates under
 `templates/`. Relative paths become dotted IDs with their extension removed:
 `templates/datastore/create_datastore.peb` becomes `datastore.create_datastore`.
@@ -50,18 +56,18 @@ directories should contain only specification files: scanning does not filter th
 by extension.
 
 ```java
-var project = new Project(Path.of("project"));
+var project = new Project(Path.of("examples/ast-rendering"));
 var metadata = new MetadataManager(project);
 var codegen = new CodeGeneratorService(project, metadata);
-String artifact = codegen.transform("base.employees")
-    .using("datastore.create_datastore")
+String artifact = codegen.transform("department_totals")
+    .using("render")
     .render();
 ```
 
 The REPL equivalent, with optional file output, is:
 
 ```text
-apply datastore.create_datastore to datastore base.employees > output.sql
+apply render to mapping department_totals > output.sql
 ```
 
 Each file is parsed as one complete specification. Multiple statements or trailing
@@ -78,10 +84,10 @@ calling `loadTemplates()` for its dependencies.
 ## Prepared ASTs and strategy parameters
 
 ```java
-var model = codegen.parse(metadata.findMapping("otp.analytic.ad_address_ti_map").orElseThrow());
+var model = codegen.parse(metadata.findMapping("department_totals").orElseThrow());
 // Manipulate concrete model objects here.
-String artifact = codegen.transform("otp.analytic.ad_address_ti_map")
-    .using("integration.history")
+String artifact = codegen.transform("department_totals")
+    .using("render")
     .withModel(model)
     .withParameter("metadata", metadata)
     .render();
@@ -210,7 +216,7 @@ contain formatted text; use the algebra model for structural expression rewrites
 
 ## Examples and validation
 
-The project Pebble datastore template and resource `create_datastore` examples for
+The test-fixture Pebble datastore template and resource `create_datastore` examples for
 the four selectable engines are exercised against the current model by
 `TemplateIntegrationTest`. Jinjava's example emits a basic CREATE TABLE; the others
 emit the existing stage datastore pattern.

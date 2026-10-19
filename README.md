@@ -67,6 +67,16 @@ apply airflow_bigquery to mapping employees_to_prep
 exit
 ```
 
+The REPL requires an explicit project directory; it does not select a default
+application. With the packaged runtime, use
+`java -jar lib/sqlmorph.jar examples/airflow-bigquery-draft`.
+Run `java -jar lib/sqlmorph.jar --help` for startup usage. Application examples
+live under `examples/`, and regression-only inputs live under
+`src/test/resources/fixtures/`.
+On Windows, `bin\sqlmorph-cli.bat <project-directory>` starts the REPL and
+`bin\sqlmorph-shell.bat <project-directory>` starts the standalone JShell session.
+Both launchers require the directory explicitly; quote paths containing spaces.
+
 The package writes these files relative to the repository root:
 
 ```text
